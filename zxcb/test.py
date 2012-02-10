@@ -1,0 +1,22 @@
+import sys
+import binascii
+import socket
+import struct
+
+MAJOR_VERSION = 11
+MINOR_VERSION = 0
+
+typ = sys.argv[1]
+key = binascii.unhexlify(sys.argv[2].encode('ascii'))
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+sock.connect('/tmp/.X11-unix/X0')
+sock.send(struct.pack('<BxHHHH2x',
+    0o154, #little endian
+    MAJOR_VERSION,
+    MINOR_VERSION,
+    len(typ),
+    len(key)) + typ.encode('ascii') + b'\x00'*(4 - len(typ) % 4) + key)
+data = sock.recv(4096)
+succ, maj, min, ln, rel, rbase, rmask, mot, ven, maxrlen, scr, fmt, imbo, bmpbo, bmsu, bmsp, minkey, maxkey = struct.unpack_from('<Bx3H4L2H8B4x', data)
+print("GOT", succ, maj, min, ln, rel, rbase, rmask, mot, ven, maxrlen, scr, fmt, imbo, bmpbo, bmsu, bmsp, minkey, maxkey)
