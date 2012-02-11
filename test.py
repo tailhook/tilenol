@@ -5,9 +5,13 @@ conn = xcb.Connection()
 def mkatom(name):
     return conn.core.InternAtom(False, len(name), name).reply().atom
 
-prop = mkatom('XFree86_VT')
+prop = mkatom('hello')
+print("HELLO", prop)
+prop = mkatom('world')
+print("WORLD", prop)
 
-while True:
+
+while False:
     conn.core.GetProperty(
             False, 0x15d,
             prop,

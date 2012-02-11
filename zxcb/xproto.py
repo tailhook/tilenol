@@ -3,6 +3,7 @@ import struct
 import socket
 import re
 import errno
+from math import ceil
 from xml.etree.ElementTree import parse, tostring
 from collections import namedtuple, OrderedDict
 
@@ -10,6 +11,16 @@ from zorro import channel, Lock, gethub
 
 
 re_ident = re.compile('^[a-zA-Z]\w+$')
+
+
+class XError(Exception):
+
+    def __init__(self, typ, params):
+        self.typ = typ
+        self.params = dict(params)
+
+    def __str__(self):
+        return '{}{!r}'.format(self.typ.name, self.params)
 
 
 class Basic(object):
@@ -37,6 +48,12 @@ class Simple(Basic):
             value, = struct.unpack_from('<'+self.typ, buf, pos)
         pos += struct.calcsize('<'+self.typ)
         return value, pos
+
+    def write_to(self, buf, value):
+        if self.typ.endswith('x'):
+            buf += struct.pack('<'+self.typ)
+        else:
+            buf += struct.pack('<'+self.typ, value)
 
 
 class Xid(Simple):
@@ -71,6 +88,10 @@ class Struct(Basic):
             oldpos=pos
         return data, pos
 
+    def write_to(self, buf, value):
+        for name, field in self.items.items():
+            field.write_to(buf, value.get(name, None))
+
 
 class Event(Struct):
 
@@ -85,11 +106,18 @@ class Request(Struct):
 
     def __init__(self, name, opcode, reqfields, repfields):
         super().__init__(name, reqfields)
-        self.opcode = opcode
+        self.opcode = int(opcode)
         self.reply = Struct(self.name + 'Reply', repfields)
 
     def clone(self, name, opcode):
         return self.__class__(name, opcode, self.items)
+
+    def write_to(self, buf, value):
+        super().write_to(buf, value)
+        buf.insert(0, self.opcode)
+        ln = int(ceil((len(buf)+2)/4))
+        buf[2:2] = struct.pack('<H', ln)
+        buf += b'\x00'*(ln*4 - len(buf))
 
 
 class Error(Struct):
@@ -135,6 +163,11 @@ class String(object):
         value = buf[pos:pos+ln]
         return value, pos+ln
 
+    def write_to(self, buf, value):
+        if isinstance(value, str):
+            value = value.encode('utf-8')
+        buf += value
+
 
 class Proto(object):
     path = '/usr/share/xcb'
@@ -145,6 +178,7 @@ class Proto(object):
         self.enums = {}
         self.events = {}
         self.errors = {}
+        self.errors_by_num = {}
         self.requests = {}
         self.simple_types()
 
@@ -210,16 +244,20 @@ class Proto(object):
 
     def _parse_error(self, el):
         items = self._parse_items(el)
-        self.errors[el.attrib['name']] = Error(
+        er = Error(
             el.attrib['name'], int(el.attrib['number']), items)
+        self.errors[el.attrib['name']] = er
+        self.errors_by_num[er.number] = er
 
     def _parse_eventcopy(self, el):
         self.add_type(self.events[el.attrib['ref']].clone(
             el.attrib['name'], int(el.attrib['number'])))
 
     def _parse_errorcopy(self, el):
-        self.errors[el.attrib['name']] = (self.errors[el.attrib['ref']]
-            .clone(el.attrib['name'], int(el.attrib['number'])))
+        er = self.errors[el.attrib['ref']]
+        ner = er.clone(el.attrib['name'], int(el.attrib['number']))
+        self.errors[el.attrib['name']] = ner
+        self.errors_by_num[ner.number] = ner
 
     def _parse_request(self, el):
         req = self._parse_items(el)
@@ -286,7 +324,7 @@ class Channel(channel.PipelinedReqChannel):
     MINOR_VERSION = 0
     BUFSIZE = 4096
 
-    def __init__(self, *, unixsock, auth_type, auth_key):
+    def __init__(self, *, unixsock):
         super().__init__()
         self.unixsock = unixsock
         if unixsock:
@@ -306,6 +344,8 @@ class Channel(channel.PipelinedReqChannel):
             else:
                 raise
         self._start()
+
+    def connect(self, auth_type, auth_key):
         buf = bytearray()
         buf.extend(struct.pack('<BxHHHH2x',
             0o154, #little endian
@@ -316,8 +356,7 @@ class Channel(channel.PipelinedReqChannel):
         buf.extend(auth_type.encode('ascii'))
         buf.extend(b'\x00'*(4 - len(auth_type) % 4))
         buf.extend(auth_key)
-        val = self.request(buf).get()
-        print("HANDSHAKE", val)
+        return self.request(buf).get()
 
     def sender(self):
         buf = bytearray()
@@ -352,8 +391,7 @@ class Channel(channel.PipelinedReqChannel):
         add_chunk = buf.extend
         pos = 0
 
-        handshake_done = False
-        while not handshake_done:
+        while True:
             wait_read(sock)
             try:
                 bytes = sock.recv(self.BUFSIZE)
@@ -365,14 +403,13 @@ class Channel(channel.PipelinedReqChannel):
                     continue
                 else:
                     raise
-            while len(buf)-pos >= 8:
+            if len(buf)-pos >= 8:
                 res, maj, min, ln = struct.unpack_from('<BxHHH', buf, pos)
                 ln = ln*4+8
                 if len(buf)-pos < ln:
                     break
                 self.produce(buf[pos:pos+ln])
                 pos += ln
-                handshake_done = True
                 break
 
         while True:
@@ -390,12 +427,16 @@ class Channel(channel.PipelinedReqChannel):
                     continue
                 else:
                     raise
-            while len(buf)-pos >= 16:
-                length, resp_to = struct.unpack_from('<i4xi', buf, pos)
-                if len(buf)-pos < length:
+            while len(buf)-pos >= 4:
+                opcode, seq, ln = struct.unpack_from('<BxHL', buf, pos)
+                # TODO(tailhook) check seq
+                ln = ln*4+32
+                if len(buf)-pos < ln:
                     break
-                self.produce(resp_to, buf[pos:pos+length])
-                pos += length
+                val = buf[pos:pos+2]
+                val.extend(buf[pos+8:pos+ln])
+                pos += ln
+                self.produce(val)
 
 
 class Connection(object):
@@ -413,13 +454,36 @@ class Connection(object):
         self._channel_lock = Lock()
 
     def connection(self):
-        if not self._channel:
+        if self._channel is None:
             with self._channel_lock:
-                if not self._channel:
-                    self._channel = Channel(unixsock=self.unixsock,
-                        auth_type=self.auth_type, auth_key=self.auth_key)
+                if self._channel is None:
+                    chan = Channel(unixsock=self.unixsock)
+                    data = chan.connect(self.auth_type, self.auth_key)
+                    value, pos = self.proto.types['Setup'].read_from(data)
+                    assert pos == len(data)
+                    self.init_data = value
+                    assert self.init_data['status'] == 1
+                    assert self.init_data['protocol_major_version'] == 11
+                    self._channel = chan
         return self._channel
 
-    def InternAtom(self, hello):
-        self.connection()
-        print("HELLO")
+    def parse_error(self, buf):
+        typ = self.proto.errors_by_num[buf[1]]
+        err, pos = typ.read_from(buf, 6)
+        assert len(buf) == max(pos, 26)
+        raise XError(typ, err)
+
+    def InternAtom(self, only_if_exists, name):
+        conn = self.connection()
+        name = name.encode('ascii')
+        buf = bytearray()
+        req = self.proto.requests['InternAtom']
+        req.write_to(buf,
+            dict(only_if_exists=only_if_exists, name_len=len(name), name=name))
+        buf = conn.request(buf).get()
+        if buf[0] == 0:
+            self.parse_error(buf)
+        assert buf[0] == 1
+        val, pos = req.reply.read_from(buf, 1)
+        assert max(pos, 26) == len(buf)
+        return val
