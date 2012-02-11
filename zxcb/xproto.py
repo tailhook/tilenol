@@ -13,6 +13,16 @@ from zorro import channel, Lock, gethub
 
 re_ident = re.compile('^[a-zA-Z]\w+$')
 
+Auth = namedtuple('Auth', 'family address number name data')
+
+def read_auth(filename=os.path.expanduser("~/.Xauthority")):
+    def rstr():
+        val, = struct.unpack('>H', f.read(2))
+        return f.read(val)
+    with open(filename, 'rb') as f:
+        family, = struct.unpack('<H', f.read(2))
+        yield Auth(family, rstr(), int(rstr()), rstr(), rstr())
+
 
 class XError(Exception):
 
@@ -354,7 +364,9 @@ class Channel(channel.PipelinedReqChannel):
             self.MINOR_VERSION,
             len(auth_type),
             len(auth_key)))
-        buf.extend(auth_type.encode('ascii'))
+        if isinstance(auth_type, str):
+            auth_type = auth_type.encode('ascii')
+        buf.extend(auth_type)
         buf.extend(b'\x00'*(4 - len(auth_type) % 4))
         buf.extend(auth_key)
         return self.request(buf).get()
@@ -442,13 +454,22 @@ class Channel(channel.PipelinedReqChannel):
 
 class Connection(object):
 
-    def __init__(self, proto, display=":0", *, auth_type, auth_key):
+    def __init__(self, proto, display=":0",
+        auth_file="~/.Xauthority", auth_type=None, auth_key=None):
         self.proto = proto
         host, port = display.split(':')
-        maj, min = port.split('.')
+        maj, min = map(int, port.split('.'))
         assert host == "", "Only localhost supported so far"
-        assert min == '0', 'Subdisplays are not not supported so far'
-        self.unixsock = '/tmp/.X11-unix/X' + maj
+        assert min == 0, 'Subdisplays are not not supported so far'
+        if auth_type is None:
+            for auth in read_auth():
+                if auth.family == socket.AF_UNIX and maj == auth.number:
+                    auth_type = auth.name
+                    auth_key = auth.data
+                    break
+            else:
+                raise RuntimeError("Can't find X auth type")
+        self.unixsock = '/tmp/.X11-unix/X{:d}'.format(maj)
         self.auth_type = auth_type
         self.auth_key = auth_key
         self._channel = None
