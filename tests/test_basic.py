@@ -1,8 +1,11 @@
 import unittest
 import os
+from functools import wraps
+
 
 def xcbtest(*protos):
     def wrapper(fun):
+        @wraps(fun)
         def wrapper(self):
             from zxcb.xproto import read_auth, Proto, Connection
             from zorro import Hub
@@ -35,3 +38,21 @@ class Test(unittest.TestCase):
         a2 = conn.InternAtom(only_if_exists=True, name="WM_CLASS")['atom']
         self.assertEqual(a2, 67)
         self.assertNotEqual(a1, a2)
+
+    @xcbtest('xproto')
+    def testMoreAtoms(self, conn):
+        totalatom = "TESTTESTTESTTESTTEST"
+        for i in range(1, len(totalatom)):
+            n = conn.InternAtom(only_if_exists=False,
+                                name=totalatom[:i])['atom']
+            self.assertTrue(n > 200)
+            self.assertTrue(isinstance(n, int))
+
+
+    @xcbtest('xproto', 'xc_misc')
+    def testXid(self, conn):
+        conn.connection()
+        xid1 = conn.new_xid()
+        xid2 = conn.new_xid()
+        self.assertTrue(xid2 > xid1)
+        self.assertTrue(isinstance(xid1, int))

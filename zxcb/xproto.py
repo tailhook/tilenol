@@ -113,6 +113,7 @@ class Event(Struct):
     def clone(self, name, number):
         return self.__class__(name, number, self.items)
 
+
 class Request(Struct):
 
     def __init__(self, name, opcode, reqfields, repfields):
@@ -125,8 +126,9 @@ class Request(Struct):
 
     def write_to(self, buf, value):
         super().write_to(buf, value)
+        assert len(buf) > 1
+        ln = int(ceil((len(buf)+3)/4))
         buf.insert(0, self.opcode)
-        ln = int(ceil((len(buf)+2)/4))
         buf[2:2] = struct.pack('<H', ln)
         buf += b'\x00'*(ln*4 - len(buf))
 
@@ -486,8 +488,15 @@ class Connection(object):
                     self.init_data = value
                     assert self.init_data['status'] == 1
                     assert self.init_data['protocol_major_version'] == 11
+                    self._init_values()
                     self._channel = chan
         return self._channel
+
+    def _init_values(self):
+        d = self.init_data
+        base = self.init_data["resource_id_base"]
+        mask = self.init_data["resource_id_mask"]
+        self.xid_generator = iter(range(base, base | mask, mask & -mask))
 
     def parse_error(self, buf):
         typ = self.proto.errors_by_num[buf[1]]
@@ -514,4 +523,7 @@ class Connection(object):
         val, pos = rtype.reply.read_from(buf, 1)
         assert max(pos, 26) == len(buf)
         return val
+
+    def new_xid(self):
+        return next(self.xid_generator)
 
