@@ -6,6 +6,7 @@ import errno
 from math import ceil
 from xml.etree.ElementTree import parse, tostring
 from collections import namedtuple, OrderedDict
+from functools import partial
 
 from zorro import channel, Lock, gethub
 
@@ -473,17 +474,23 @@ class Connection(object):
         assert len(buf) == max(pos, 26)
         raise XError(typ, err)
 
-    def InternAtom(self, only_if_exists, name):
+    def __getattr__(self, name):
+        req = self.proto.requests[name]
+        return partial(self.do_request, req)
+
+    def do_request(self, rtype, **kw):
         conn = self.connection()
-        name = name.encode('ascii')
+        for i in list(kw):
+            n = i + '_len'
+            if n in rtype.items:
+                kw[n] = len(kw[i])
         buf = bytearray()
-        req = self.proto.requests['InternAtom']
-        req.write_to(buf,
-            dict(only_if_exists=only_if_exists, name_len=len(name), name=name))
+        rtype.write_to(buf, kw)
         buf = conn.request(buf).get()
         if buf[0] == 0:
             self.parse_error(buf)
         assert buf[0] == 1
-        val, pos = req.reply.read_from(buf, 1)
+        val, pos = rtype.reply.read_from(buf, 1)
         assert max(pos, 26) == len(buf)
         return val
+

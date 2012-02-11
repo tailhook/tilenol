@@ -20,8 +20,10 @@ def main():
         pr.load_xml('xproto')
         conn = Connection(pr, os.environ['DISPLAY'],
             auth_type=typ, auth_key=key)
-        print("hello", conn.InternAtom(False, 'hello')['atom'])
-        print("world", conn.InternAtom(False, 'world')['atom'])
+        print("hello", conn.InternAtom(
+            only_if_exists=False, name='hello')['atom'])
+        print("world", conn.InternAtom(
+            only_if_exists=False, name='world')['atom'])
 
 if __name__ == "__main__":
     main()
