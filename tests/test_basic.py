@@ -28,6 +28,7 @@ def xcbtest(*protos):
         return wrapper
     return wrapper
 
+
 class Test(unittest.TestCase):
 
     @xcbtest('xproto')
@@ -49,10 +50,22 @@ class Test(unittest.TestCase):
             self.assertTrue(isinstance(n, int))
 
 
-    @xcbtest('xproto', 'xc_misc')
+    @xcbtest('xproto')
     def testXid(self, conn):
         conn.connection()
         xid1 = conn.new_xid()
         xid2 = conn.new_xid()
         self.assertTrue(xid2 > xid1)
         self.assertTrue(isinstance(xid1, int))
+
+    @xcbtest('xproto')
+    def testWin(self, conn):
+        win = conn.create_toplevel(
+            bounds=Rectangle(10, 10, 100, 100),
+            border=1,
+            klass=conn.atom.XCB_WINDOW_CLASS_INPUT_OUTPUT,
+            params={
+                conn.CW.BackPixel: conn.init_data['black_pixel'],
+                conn.CW.EventMask: conn.EventMask.Exposure | conn.EventMask.KeyPress,
+                })
+

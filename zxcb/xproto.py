@@ -24,6 +24,12 @@ def read_auth(filename=os.path.expanduser("~/.Xauthority")):
         yield Auth(family, rstr(), int(rstr()), rstr(), rstr())
 
 
+_Rectangle = namedtuple('_Rectangle', 'left top width height')
+
+class Rectangle(_Rectangle):
+    __slots__ = ()
+
+
 class XError(Exception):
 
     def __init__(self, typ, params):
