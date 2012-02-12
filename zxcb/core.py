@@ -1,3 +1,6 @@
+from functools import partial
+
+
 class Const(int):
 
     def __new__(cls, val, name):
@@ -40,12 +43,22 @@ class EnumWrapper(object):
             setattr(self, k, Const(v, k))
 
 
+class RawWrapper(object):
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __getattr__(self, name):
+        return partial(self._conn.do_request, self._conn.proto.requests[name])
+
+
 class Core(object):
 
     def __init__(self, connection):
         self._conn = connection
         self.proto = connection.proto
         self.atom = AtomWrapper(connection, self.proto)
+        self.raw = RawWrapper(connection)
         for k, lst in self.proto.enums.items():
             setattr(self, k, EnumWrapper(lst))
 

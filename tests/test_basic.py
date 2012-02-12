@@ -94,3 +94,10 @@ class TestWrapper(unittest.TestCase):
         self.assertEqual(core.EventMask.Exposure, 32768)
         self.assertEqual(core.CW.BackPixel, 2)
         self.assertEqual(repr(core.CW.BackPixel), '<Const BackPixel:2>')
+
+    @xcbtest('xproto')
+    def testRaw(self, conn):
+        from zxcb.core import Core
+        core = Core(conn)
+        a2 = core.raw.InternAtom(only_if_exists=True, name="WM_CLASS")['atom']
+        self.assertEqual(a2, 67)
