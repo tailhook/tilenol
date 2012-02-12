@@ -7,7 +7,7 @@ def xcbtest(*protos):
     def wrapper(fun):
         @wraps(fun)
         def wrapper(self):
-            from zxcb.xproto import read_auth, Proto, Connection
+            from zxcb import Proto, Connection
             from zorro import Hub
             err = []
             hub = Hub()
