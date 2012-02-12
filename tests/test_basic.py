@@ -86,3 +86,11 @@ class TestWrapper(unittest.TestCase):
             only_if_exists=False, name="_ZXCB")['atom']
         self.assertTrue(a1 > 200)
         self.assertEquals(core.atom._ZXCB, a1)
+
+    @xcbtest('xproto')
+    def testAtoms(self, conn):
+        from zxcb.core import Core
+        core = Core(conn)
+        self.assertEqual(core.EventMask.Exposure, 32768)
+        self.assertEqual(core.CW.BackPixel, 2)
+        self.assertEqual(repr(core.CW.BackPixel), '<Const BackPixel:2>')

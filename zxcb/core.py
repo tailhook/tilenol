@@ -1,7 +1,7 @@
-class Atom(int):
+class Const(int):
 
-    def __new__(self, val, name):
-        return super().__new__(Atom, val)
+    def __new__(cls, val, name):
+        return super().__new__(cls, val)
 
     def __init__(self, val, name):
         self.name = name
@@ -9,6 +9,9 @@ class Atom(int):
 
     def __repr__(self):
         return '<{} {}:{}>'.format(self.__class__.__name__, self.name, self)
+
+class Atom(Const):
+    pass
 
 
 class AtomWrapper(object):
@@ -30,10 +33,19 @@ class AtomWrapper(object):
         return atom
 
 
+class EnumWrapper(object):
+
+    def __init__(self, enums):
+        for k, v in enums.items():
+            setattr(self, k, Const(v, k))
+
+
 class Core(object):
 
     def __init__(self, connection):
         self._conn = connection
         self.proto = connection.proto
         self.atom = AtomWrapper(connection, self.proto)
+        for k, lst in self.proto.enums.items():
+            setattr(self, k, EnumWrapper(lst))
 
