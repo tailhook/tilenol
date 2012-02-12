@@ -199,10 +199,6 @@ class Connection(object):
         assert len(buf) == max(pos, 26)
         raise XError(typ, err)
 
-    def __getattr__(self, name):
-        req = self.proto.requests[name]
-        return partial(self.do_request, req)
-
     def do_request(self, rtype, **kw):
         conn = self.connection()
         for i in list(kw):

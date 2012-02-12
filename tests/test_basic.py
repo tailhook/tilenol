@@ -29,14 +29,16 @@ def xcbtest(*protos):
     return wrapper
 
 
-class Test(unittest.TestCase):
+class TestConn(unittest.TestCase):
 
     @xcbtest('xproto')
     def testAtom(self, conn):
-        a1 = conn.InternAtom(only_if_exists=False, name="ZXCB")['atom']
-        self.assertTrue(a1 > 200)
+        a1 = conn.do_request(conn.proto.requests['InternAtom'],
+            only_if_exists=False, name="_ZXCB")['atom']
+        self.assertTrue(a1 > 100)
         self.assertTrue(isinstance(a1, int))
-        a2 = conn.InternAtom(only_if_exists=True, name="WM_CLASS")['atom']
+        a2 = conn.do_request(conn.proto.requests['InternAtom'],
+            only_if_exists=True, name="WM_CLASS")['atom']
         self.assertEqual(a2, 67)
         self.assertNotEqual(a1, a2)
 
@@ -44,8 +46,8 @@ class Test(unittest.TestCase):
     def testMoreAtoms(self, conn):
         totalatom = "TESTTESTTESTTESTTEST"
         for i in range(1, len(totalatom)):
-            n = conn.InternAtom(only_if_exists=False,
-                                name=totalatom[:i])['atom']
+            n = conn.do_request(conn.proto.requests['InternAtom'],
+                only_if_exists=False, name=totalatom[:i])['atom']
             self.assertTrue(n > 200)
             self.assertTrue(isinstance(n, int))
 
@@ -58,6 +60,7 @@ class Test(unittest.TestCase):
         self.assertTrue(xid2 > xid1)
         self.assertTrue(isinstance(xid1, int))
 
+
     @xcbtest('xproto')
     def testWin(self, conn):
         win = conn.create_toplevel(
@@ -69,3 +72,17 @@ class Test(unittest.TestCase):
                 conn.CW.EventMask: conn.EventMask.Exposure | conn.EventMask.KeyPress,
                 })
 
+
+class TestWrapper(unittest.TestCase):
+
+    @xcbtest('xproto')
+    def testAtoms(self, conn):
+        from zxcb.core import Core
+        core = Core(conn)
+        self.assertEqual(core.atom.WM_CLASS, 67)
+        self.assertEqual(core.atom.WM_CLASS.name, 'WM_CLASS')
+        self.assertEqual(repr(core.atom.WM_CLASS), '<Atom WM_CLASS:67>')
+        a1 = conn.do_request(conn.proto.requests['InternAtom'],
+            only_if_exists=False, name="_ZXCB")['atom']
+        self.assertTrue(a1 > 200)
+        self.assertEquals(core.atom._ZXCB, a1)
