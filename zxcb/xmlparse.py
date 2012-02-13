@@ -1,5 +1,6 @@
 import os.path
 import struct
+import keyword
 from math import ceil
 from collections import namedtuple, OrderedDict
 from xml.etree.ElementTree import parse, tostring
@@ -83,6 +84,10 @@ class Event(Struct):
     def __init__(self, name, number, fields):
         super().__init__(name, fields)
         self.number = number
+        allfields = ['seq']
+        allfields.extend(f + '_' if keyword.iskeyword(f) else f
+            for f in fields if isinstance(f, str))
+        self.type = namedtuple(self.name + 'Event', allfields)
 
     def clone(self, name, number):
         return self.__class__(name, number, self.items)
@@ -95,6 +100,10 @@ class Request(Struct):
         self.opcode = int(opcode)
         if repfields:
             self.reply = Struct(self.name + 'Reply', repfields)
+            fields = ['seq']
+            fields.extend(f + '_' if keyword.iskeyword(f) else f
+                for f in repfields if isinstance(f, str))
+            self.reply_type = namedtuple(self.name + 'Reply', fields)
         else:
             self.reply = None
 
@@ -183,6 +192,7 @@ class Proto(object):
         self.types = {}
         self.enums = {}
         self.events = {}
+        self.events_by_num = {}
         self.errors = {}
         self.errors_by_num = {}
         self.requests = {}
@@ -245,24 +255,26 @@ class Proto(object):
 
     def _parse_event(self, el):
         items = self._parse_items(el)
-        self.events[el.attrib['name']] = Event(
-            el.attrib['name'], int(el.attrib['number']), items)
+        ev = Event(el.attrib['name'], int(el.attrib['number']), items)
+        self.events[ev.name] = ev
+        self.events_by_num[ev.number] = ev
 
     def _parse_error(self, el):
         items = self._parse_items(el)
-        er = Error(
-            el.attrib['name'], int(el.attrib['number']), items)
-        self.errors[el.attrib['name']] = er
+        er = Error(el.attrib['name'], int(el.attrib['number']), items)
+        self.errors[er.name] = er
         self.errors_by_num[er.number] = er
 
     def _parse_eventcopy(self, el):
-        self.add_type(self.events[el.attrib['ref']].clone(
-            el.attrib['name'], int(el.attrib['number'])))
+        er = self.events[el.attrib['ref']]
+        ner = er.clone(el.attrib['name'], int(el.attrib['number']))
+        self.events[ner.name] = ner
+        self.events_by_num[ner.number] = ner
 
     def _parse_errorcopy(self, el):
         er = self.errors[el.attrib['ref']]
         ner = er.clone(el.attrib['name'], int(el.attrib['number']))
-        self.errors[el.attrib['name']] = ner
+        self.errors[ner.name] = ner
         self.errors_by_num[ner.number] = ner
 
     def _parse_request(self, el):

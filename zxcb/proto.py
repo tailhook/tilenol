@@ -4,9 +4,9 @@ import errno
 import struct
 from math import ceil
 from functools import partial
-from collections import namedtuple
+from collections import namedtuple, deque
 
-from zorro import channel, Lock, gethub
+from zorro import channel, Lock, gethub, Condition
 
 from .auth import read_auth
 
@@ -26,9 +26,10 @@ class Channel(channel.PipelinedReqChannel):
     MINOR_VERSION = 0
     BUFSIZE = 4096
 
-    def __init__(self, *, unixsock):
+    def __init__(self, *, unixsock, event_dispatcher):
         super().__init__()
         self.unixsock = unixsock
+        self.event_dispatcher = event_dispatcher
         if unixsock:
             self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         else:
@@ -131,16 +132,23 @@ class Channel(channel.PipelinedReqChannel):
                     continue
                 else:
                     raise
-            while len(buf)-pos >= 4:
+            while len(buf)-pos >= 8:
                 opcode, seq, ln = struct.unpack_from('<BxHL', buf, pos)
                 # TODO(tailhook) check seq
-                ln = ln*4+32
-                if len(buf)-pos < ln:
-                    break
-                val = buf[pos:pos+2]
-                val.extend(buf[pos+8:pos+ln])
-                pos += ln
-                self.produce(val)
+                if opcode > 1:
+                    if len(buf) - pos < 32:
+                        break
+                    self.event_dispatcher(seq,
+                        buf[pos:pos+2] + buf[pos+4:pos+32])
+                    pos += 32
+                else:
+                    ln = ln*4+32
+                    if len(buf)-pos < ln:
+                        break
+                    val = buf[pos:pos+2]
+                    val.extend(buf[pos+8:pos+ln])
+                    pos += ln
+                    self.produce(val)
 
 
 class Connection(object):
@@ -165,12 +173,15 @@ class Connection(object):
         self.auth_key = auth_key
         self._channel = None
         self._channel_lock = Lock()
+        self._condition = Condition()
+        self.events = deque()
 
     def connection(self):
         if self._channel is None:
             with self._channel_lock:
                 if self._channel is None:
-                    chan = Channel(unixsock=self.unixsock)
+                    chan = Channel(unixsock=self.unixsock,
+                                   event_dispatcher=self.event_dispatcher)
                     data = chan.connect(self.auth_type, self.auth_key)
                     value, pos = self.proto.types['Setup'].read_from(data)
                     assert pos == len(data)
@@ -215,4 +226,17 @@ class Connection(object):
 
     def new_xid(self):
         return next(self.xid_generator)
+
+    def event_dispatcher(self, seq, buf):
+        etype = self.proto.events_by_num[buf[0] & 127]
+        ev, pos = etype.read_from(buf, 1)
+        assert pos < 32
+        self.events.append(etype.type(seq, **ev))
+        self._condition.notify()
+
+    def get_events(self):
+        while True:
+            while self.events:
+                yield self.events.popleft()
+            self._condition.wait()
 
