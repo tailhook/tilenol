@@ -1,4 +1,9 @@
 from functools import partial
+from collections import namedtuple
+
+
+class Rectangle(namedtuple('_Rectangle', 'left top width height')):
+    __slots__ = ()
 
 
 class Const(int):
@@ -52,6 +57,15 @@ class RawWrapper(object):
         return partial(self._conn.do_request, self._conn.proto.requests[name])
 
 
+class Window(object):
+
+    def __init__(self, wid):
+        self.wid = wid
+
+    def __repr__(self):
+        return '<{} {}>'.format(self.__class__.__name__, self.wid)
+
+
 class Core(object):
 
     def __init__(self, connection):
@@ -61,4 +75,24 @@ class Core(object):
         self.raw = RawWrapper(connection)
         for k, lst in self.proto.enums.items():
             setattr(self, k, EnumWrapper(lst))
+
+    def create_toplevel(self, bounds, border=0, klass=None, params={}):
+        wid = self._conn.new_xid()
+        root = self._conn.init_data['roots'][0]
+        self.raw.CreateWindow(**{
+            'wid': wid,
+            'root': root,
+            'depth': root['root_depth'],
+            'parent': root['root'],
+            'visual': root['root_visual'],
+            'x': bounds.left,
+            'y': bounds.top,
+            'width': bounds.width,
+            'height': bounds.height,
+            'border_width': border,
+            'class': klass,
+            'params': params,
+            })
+        return Window(wid)
+
 

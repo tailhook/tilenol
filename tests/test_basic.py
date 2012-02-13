@@ -61,18 +61,6 @@ class TestConn(unittest.TestCase):
         self.assertTrue(isinstance(xid1, int))
 
 
-    @xcbtest('xproto')
-    def testWin(self, conn):
-        win = conn.create_toplevel(
-            bounds=Rectangle(10, 10, 100, 100),
-            border=1,
-            klass=conn.atom.XCB_WINDOW_CLASS_INPUT_OUTPUT,
-            params={
-                conn.CW.BackPixel: conn.init_data['black_pixel'],
-                conn.CW.EventMask: conn.EventMask.Exposure | conn.EventMask.KeyPress,
-                })
-
-
 class TestWrapper(unittest.TestCase):
 
     @xcbtest('xproto')
@@ -101,3 +89,20 @@ class TestWrapper(unittest.TestCase):
         core = Core(conn)
         a2 = core.raw.InternAtom(only_if_exists=True, name="WM_CLASS")['atom']
         self.assertEqual(a2, 67)
+
+    @xcbtest('xproto')
+    def testWin(self, conn):
+        from zxcb.core import Core, Rectangle
+        core = Core(conn)
+        conn.connection()
+        win = core.create_toplevel(
+            bounds=Rectangle(10, 10, 100, 100),
+            border=1,
+            klass=core.WindowClass.InputOutput,
+            params={
+                core.CW.BackPixel: conn.init_data['roots'][0]['white_pixel'],
+                core.CW.EventMask:
+                    core.EventMask.Exposure | core.EventMask.KeyPress,
+                })
+        mapres = core.raw.MapWindow(window=win.wid)
+        print("MAPRES")

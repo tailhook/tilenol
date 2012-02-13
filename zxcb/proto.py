@@ -11,12 +11,6 @@ from zorro import channel, Lock, gethub
 from .auth import read_auth
 
 
-_Rectangle = namedtuple('_Rectangle', 'left top width height')
-
-class Rectangle(_Rectangle):
-    __slots__ = ()
-
-
 class XError(Exception):
 
     def __init__(self, typ, params):
@@ -191,7 +185,8 @@ class Connection(object):
         d = self.init_data
         base = self.init_data["resource_id_base"]
         mask = self.init_data["resource_id_mask"]
-        self.xid_generator = iter(range(base, base | mask, mask & -mask))
+        inc = mask & -mask
+        self.xid_generator = iter(range(base, base | mask, inc))
 
     def parse_error(self, buf):
         typ = self.proto.errors_by_num[buf[1]]
@@ -207,13 +202,16 @@ class Connection(object):
                 kw[n] = len(kw[i])
         buf = bytearray()
         rtype.write_to(buf, kw)
-        buf = conn.request(buf).get()
-        if buf[0] == 0:
-            self.parse_error(buf)
-        assert buf[0] == 1
-        val, pos = rtype.reply.read_from(buf, 1)
-        assert max(pos, 26) == len(buf)
-        return val
+        if rtype.reply:
+            buf = conn.request(buf).get()
+            if buf[0] == 0:
+                self.parse_error(buf)
+            assert buf[0] == 1
+            val, pos = rtype.reply.read_from(buf, 1)
+            assert max(pos, 26) == len(buf)
+            return val
+        else:
+            conn.push(buf)
 
     def new_xid(self):
         return next(self.xid_generator)

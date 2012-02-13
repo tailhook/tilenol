@@ -72,7 +72,10 @@ class Struct(Basic):
 
     def write_to(self, buf, value):
         for name, field in self.items.items():
-            field.write_to(buf, value.get(name, None))
+            if isinstance(name, int):
+                field.write_to(buf, None)
+            else:
+                field.write_to(buf, value[name])
 
 
 class Event(Struct):
@@ -90,7 +93,10 @@ class Request(Struct):
     def __init__(self, name, opcode, reqfields, repfields):
         super().__init__(name, reqfields)
         self.opcode = int(opcode)
-        self.reply = Struct(self.name + 'Reply', repfields)
+        if repfields:
+            self.reply = Struct(self.name + 'Reply', repfields)
+        else:
+            self.reply = None
 
     def clone(self, name, opcode):
         return self.__class__(name, opcode, self.items)
@@ -153,6 +159,22 @@ class String(object):
         buf += value
 
 
+class Params(object):
+
+    def __init__(self, mask_type):
+        self.mask_type = mask_type
+
+    def write_to(self, buf, dic):
+        mask = 0
+        pos = len(buf)
+        lst = []
+        for k in sorted(dic):
+            mask |= k
+            lst.append(dic[k])
+        self.mask_type.write_to(buf, mask)
+        buf += struct.pack('<{0}L'.format(len(lst)), *lst)
+
+
 class Proto(object):
     path = '/usr/share/xcb'
 
@@ -206,8 +228,8 @@ class Proto(object):
                     typ = List(code, self.types[field.attrib['type']])
                 items[field.attrib['name']] = typ
             elif field.tag == 'valueparam':
-                print(field.tag)
-                # TODO(tailhook) implement valueparam. What's this?
+                items['params'] = Params(self.types[
+                    field.attrib['value-mask-type']])
             elif field.tag == 'exprfield':
                 print(field.tag)
                 # TODO(tailhook) implement exprfield
