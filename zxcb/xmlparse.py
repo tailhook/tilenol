@@ -34,9 +34,10 @@ class Simple(Basic):
 
     def write_to(self, buf, value):
         if self.typ.endswith('x'):
-            buf += struct.pack('<'+self.typ)
+            buf += struct.pack(self.typ)
         else:
             buf += struct.pack('<'+self.typ, value)
+
 
 
 class Xid(Simple):
@@ -76,7 +77,10 @@ class Struct(Basic):
             if isinstance(name, int):
                 field.write_to(buf, None)
             else:
-                field.write_to(buf, value[name])
+                try:
+                    field.write_to(buf, value[name])
+                except struct.error:
+                    raise ValueError("Wrong value for field {!r}".format(name))
 
 
 class Event(Struct):
@@ -150,6 +154,10 @@ class List(object):
             value, pos = self.type.read_from(buf, pos)
             res.append(value)
         return res, pos
+
+    def write_to(self, buf, value):
+        assert self.code is None
+        buf.extend(memoryview(value))
 
 class String(object):
 

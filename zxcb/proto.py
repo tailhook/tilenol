@@ -2,11 +2,12 @@ import socket
 import re
 import errno
 import struct
+import traceback
 from math import ceil
 from functools import partial
 from collections import namedtuple, deque
 
-from zorro import channel, Lock, gethub, Condition
+from zorro import channel, Lock, gethub, Condition, Future
 
 from .auth import read_auth
 
@@ -26,10 +27,12 @@ class Channel(channel.PipelinedReqChannel):
     MINOR_VERSION = 0
     BUFSIZE = 4096
 
-    def __init__(self, *, unixsock, event_dispatcher):
+    def __init__(self, *, unixsock, event_dispatcher, proto):
         super().__init__()
         self.unixsock = unixsock
+        self.request_id = 0
         self.event_dispatcher = event_dispatcher
+        self.proto = proto
         if unixsock:
             self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         else:
@@ -63,6 +66,19 @@ class Channel(channel.PipelinedReqChannel):
         buf.extend(auth_key)
         return self.request(buf).get()
 
+    def request(self, input):
+        if not self._alive:
+            raise PipeError()
+        val = Future()
+        self._pending.append((input, val, None))
+        self._cond.notify()
+        return val
+
+    def push(self, input):
+        """For requests which do not need an answer"""
+        self._pending.append((input, None, traceback.extract_stack()))
+        self._cond.notify()
+
     def sender(self):
         buf = bytearray()
 
@@ -75,8 +91,10 @@ class Channel(channel.PipelinedReqChannel):
             if not self._alive:
                 return
             wait_write(self._sock)
-            for chunk in self.get_pending_requests():
-                add_chunk(chunk)
+            for inp, fut, tb in self.get_pending_requests():
+                self._producing.append((self.request_id, fut, tb))
+                self.request_id += 1
+                add_chunk(inp)
             try:
                 bytes = self._sock.send(buf)
             except socket.error as e:
@@ -87,6 +105,25 @@ class Channel(channel.PipelinedReqChannel):
             if not bytes:
                 raise EOFError()
             del buf[:bytes]
+
+    def produce(self, seq, value):
+        if not self._alive:
+            raise ShutdownException()
+        request_id, fut, tb = self._producing.pop()
+        while seq < request_id and request_id > 0:
+            assert fut is None
+            request_id, fut, tb = self._producing.pop()
+        if fut is not None:
+            fut.set(value)
+        elif value[0] == 0:
+            typ = self.proto.errors_by_num[value[1]]
+            err, pos = typ.read_from(value, 6)
+            assert len(value) == max(pos, 30)
+            lst = traceback.format_list(tb)
+            lst.extend(traceback.format_exception_only(
+                XError, XError(typ, err)))
+            print(''.join(lst))  # TODO(tailhook) use logging
+
 
     def receiver(self):
         buf = bytearray()
@@ -113,7 +150,7 @@ class Channel(channel.PipelinedReqChannel):
                 ln = ln*4+8
                 if len(buf)-pos < ln:
                     break
-                self.produce(buf[pos:pos+ln])
+                self.produce(-1, buf[pos:pos+ln])
                 pos += ln
                 break
 
@@ -135,11 +172,10 @@ class Channel(channel.PipelinedReqChannel):
             while len(buf)-pos >= 8:
                 opcode, seq, ln = struct.unpack_from('<BxHL', buf, pos)
                 # TODO(tailhook) check seq
-                if opcode > 1:
+                if opcode != 1:
                     if len(buf) - pos < 32:
                         break
-                    self.event_dispatcher(seq,
-                        buf[pos:pos+2] + buf[pos+4:pos+32])
+                    val = buf[pos:pos+2] + buf[pos+4:pos+32]
                     pos += 32
                 else:
                     ln = ln*4+32
@@ -148,7 +184,10 @@ class Channel(channel.PipelinedReqChannel):
                     val = buf[pos:pos+2]
                     val.extend(buf[pos+8:pos+ln])
                     pos += ln
-                    self.produce(val)
+                if opcode > 0:
+                    self.event_dispatcher(seq, val)
+                else:
+                    self.produce(seq, val)
 
 
 class Connection(object):
@@ -181,6 +220,7 @@ class Connection(object):
             with self._channel_lock:
                 if self._channel is None:
                     chan = Channel(unixsock=self.unixsock,
+                                   proto=self.proto,
                                    event_dispatcher=self.event_dispatcher)
                     data = chan.connect(self.auth_type, self.auth_key)
                     value, pos = self.proto.types['Setup'].read_from(data)

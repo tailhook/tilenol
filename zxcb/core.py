@@ -81,7 +81,7 @@ class Core(object):
         root = self._conn.init_data['roots'][0]
         self.raw.CreateWindow(**{
             'wid': wid,
-            'root': root,
+            'root': root['root'],
             'depth': root['root_depth'],
             'parent': root['root'],
             'visual': root['root_visual'],
