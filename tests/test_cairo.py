@@ -11,7 +11,7 @@ class TestConn(unittest.TestCase):
         core = Core(conn)
         img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
         ctx = cairo.Context(img)
-        ctx.set_source_rgb(0.5, 0.5, 0.5)
+        ctx.set_source_rgb(1, 0, 0)
         ctx.move_to(64, 0)
         ctx.line_to(128, 128)
         ctx.line_to(0, 128)
@@ -28,7 +28,6 @@ class TestConn(unittest.TestCase):
                 })
         core.raw.MapWindow(window=win.wid)
         for ev in conn.get_events():
-            print(ev)
             if ev.__class__.__name__ == 'ExposeEvent' and ev.window == win.wid:
                 break
         gc = conn.new_xid()
@@ -37,8 +36,9 @@ class TestConn(unittest.TestCase):
             drawable=conn.init_data['roots'][0]['root'],
             params={},
             )
+        assert len(bytes(img)) >= 128*128*4, len(bytes(img))
         core.raw.PutImage(
-            format=core.ImageFormat.XYPixmap,
+            format=core.ImageFormat.ZPixmap,
             drawable=win.wid,
             gc=gc,
             width=128,
@@ -46,9 +46,8 @@ class TestConn(unittest.TestCase):
             dst_x=0,
             dst_y=0,
             left_pad=0,
-            depth=32,
-            data=img,
+            depth=24,
+            data=bytes(img)[:128*128*4],
             )
-        for ev in conn.get_events():
-            print(ev)
+        core.raw.GetAtomName(atom=1)  # ensures putimage error will be printed
 
