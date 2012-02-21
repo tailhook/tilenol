@@ -68,7 +68,7 @@ class Channel(channel.PipelinedReqChannel):
 
     def request(self, input):
         if not self._alive:
-            raise PipeError()
+            raise channel.PipeError()
         val = Future()
         self._pending.append((input, val, None))
         self._cond.notify()
@@ -123,6 +123,13 @@ class Channel(channel.PipelinedReqChannel):
             lst.extend(traceback.format_exception_only(
                 XError, XError(typ, err)))
             print(''.join(lst))  # TODO(tailhook) use logging
+
+    def _stop_producing(self):
+        prod = self._producing
+        del self._producing
+        for rid, fut, tb in prod:
+            if fut is not None:
+                fut.throw(channel.PipeError())
 
 
     def receiver(self):
@@ -184,7 +191,7 @@ class Channel(channel.PipelinedReqChannel):
                     val = buf[pos:pos+2]
                     val.extend(buf[pos+8:pos+ln])
                     pos += ln
-                if opcode > 0:
+                if opcode > 1:
                     self.event_dispatcher(seq, val)
                 else:
                     self.produce(seq, val)
@@ -259,7 +266,7 @@ class Connection(object):
                 self.parse_error(buf)
             assert buf[0] == 1
             val, pos = rtype.reply.read_from(buf, 1)
-            assert max(pos, 26) == len(buf)
+            assert max(ceil((pos-2)/4)*4+2, 26) == len(buf), (pos, len(buf))
             return val
         else:
             conn.push(buf)

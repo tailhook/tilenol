@@ -7,7 +7,7 @@ def xcbtest(*protos):
     def wrapper(fun):
         @wraps(fun)
         def wrapper(self):
-            from zxcb import Proto, Connection
+            from tilenol.xcb import Proto, Connection
             from zorro import Hub
             err = []
             hub = Hub()
@@ -65,7 +65,7 @@ class TestWrapper(unittest.TestCase):
 
     @xcbtest('xproto')
     def testAtoms(self, conn):
-        from zxcb.core import Core
+        from tilenol.xcb.core import Core
         core = Core(conn)
         self.assertEqual(core.atom.WM_CLASS, 67)
         self.assertEqual(core.atom.WM_CLASS.name, 'WM_CLASS')
@@ -77,7 +77,7 @@ class TestWrapper(unittest.TestCase):
 
     @xcbtest('xproto')
     def testAtoms(self, conn):
-        from zxcb.core import Core
+        from tilenol.xcb.core import Core
         core = Core(conn)
         self.assertEqual(core.EventMask.Exposure, 32768)
         self.assertEqual(core.CW.BackPixel, 2)
@@ -85,14 +85,14 @@ class TestWrapper(unittest.TestCase):
 
     @xcbtest('xproto')
     def testRaw(self, conn):
-        from zxcb.core import Core
+        from tilenol.xcb.core import Core
         core = Core(conn)
         a2 = core.raw.InternAtom(only_if_exists=True, name="WM_CLASS")['atom']
         self.assertEqual(a2, 67)
 
     @xcbtest('xproto')
     def testWin(self, conn):
-        from zxcb.core import Core, Rectangle
+        from tilenol.xcb.core import Core, Rectangle
         core = Core(conn)
         conn.connection()
         win = core.create_toplevel(

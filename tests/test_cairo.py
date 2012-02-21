@@ -7,7 +7,7 @@ class TestConn(unittest.TestCase):
 
     @xcbtest('xproto')
     def testPicture(self, conn):
-        from zxcb.core import Core, Rectangle
+        from tilenol.xcb.core import Core, Rectangle
         core = Core(conn)
         img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
         ctx = cairo.Context(img)
