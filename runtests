@@ -1,0 +1,2 @@
+#!/bin/bash
+exec startx $(which python3) -m unittest discover $* -- $(which Xvfb) :13 -screen 0 800x600x24

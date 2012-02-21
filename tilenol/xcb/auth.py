@@ -11,5 +11,6 @@ def read_auth(filename=os.path.expanduser("~/.Xauthority")):
         val, = struct.unpack('>H', f.read(2))
         return f.read(val)
     with open(filename, 'rb') as f:
-        family, = struct.unpack('<H', f.read(2))
-        yield Auth(family, rstr(), int(rstr()), rstr(), rstr())
+        while True:
+            family, = struct.unpack('<H', f.read(2))
+            yield Auth(family, rstr(), int(rstr()), rstr(), rstr())

@@ -1,3 +1,4 @@
+import os.path
 import socket
 import re
 import errno
@@ -109,13 +110,18 @@ class Channel(channel.PipelinedReqChannel):
     def produce(self, seq, value):
         if not self._alive:
             raise ShutdownException()
-        request_id, fut, tb = self._producing.pop()
-        while seq < request_id and request_id > 0:
+        assert seq <= self.request_id
+        request_id, fut, tb = self._producing.popleft()
+        while request_id < seq:
+            if fut is not None:
+                fut.throw(RuntimeError("Request ignored"))
             assert fut is None
-            request_id, fut, tb = self._producing.pop()
+            request_id, fut, tb = self._producing.popleft()
+        assert seq == request_id, (seq, request_id)
         if fut is not None:
             fut.set(value)
-        elif value[0] == 0:
+        else:
+            assert value[0] == 0
             typ = self.proto.errors_by_num[value[1]]
             err, pos = typ.read_from(value, 6)
             assert len(value) == max(pos, 30)
@@ -157,7 +163,7 @@ class Channel(channel.PipelinedReqChannel):
                 ln = ln*4+8
                 if len(buf)-pos < ln:
                     break
-                self.produce(-1, buf[pos:pos+ln])
+                self._producing.popleft()[1].set(buf[pos:pos+ln])
                 pos += ln
                 break
 
@@ -199,11 +205,21 @@ class Channel(channel.PipelinedReqChannel):
 
 class Connection(object):
 
-    def __init__(self, proto, display=":0",
-        auth_file="~/.Xauthority", auth_type=None, auth_key=None):
+    def __init__(self, proto, display=None,
+        auth_file=None, auth_type=None, auth_key=None):
         self.proto = proto
+        if display is None:
+            display = os.environ.get('DISPLAY', ':0')
+        if auth_file is None and auth_type is None:
+            auth_file = os.environ.get('XAUTHORITY')
+            if auth_file is None:
+                auth_file = os.path.expanduser('~/.XAuthority')
         host, port = display.split(':')
-        maj, min = map(int, port.split('.'))
+        if '.' in port:
+            maj, min = map(int, port.split('.'))
+        else:
+            maj = int(port)
+            min = 0
         assert host == "", "Only localhost supported so far"
         assert min == 0, 'Subdisplays are not not supported so far'
         if auth_type is None:

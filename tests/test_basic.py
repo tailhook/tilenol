@@ -15,7 +15,7 @@ def xcbtest(*protos):
                 pr = Proto()
                 for i in protos:
                     pr.load_xml(i)
-                conn = Connection(pr, os.environ['DISPLAY'])
+                conn = Connection(pr)
                 fun(self, conn)
             @hub.run
             def test():
