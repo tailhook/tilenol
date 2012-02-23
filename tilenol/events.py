@@ -40,6 +40,16 @@ class EventDispatcher(object):
         else:
             win.show()
 
+    def handle_EnterNotifyEvent(self, ev):
+        try:
+            win = self.frames[ev.event]
+        except KeyError:
+            log.warning("Enter notify for non-existent window %x",
+                ev.window)
+        else:
+            win.focus(ev)
+
+
     def handle_MapNotifyEvent(self, ev):
         pass  # TODO(tailhook) mark window as visible
 

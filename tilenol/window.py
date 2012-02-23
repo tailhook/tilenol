@@ -73,15 +73,30 @@ class Window(object):
             klass=self.xcore.WindowClass.InputOutput,
             params={
                 self.xcore.CW.EventMask:
-                    self.xcore.EventMask.SubstructureRedirect,
+                    self.xcore.EventMask.SubstructureRedirect
+                    | self.xcore.EventMask.EnterWindow
+                    | self.xcore.EventMask.LeaveWindow,
                 self.xcore.CW.OverrideRedirect: True,
-            })))
+            }), self))
         self.xcore.raw.ReparentWindow(
             window=self,
             parent=self.frame,
             x=0, y=0)
         return self.frame
 
+    def focus(self, ev):
+        self.xcore.raw.SetInputFocus(
+            focus=self,
+            revert_to=getattr(self.xcore.atom, 'None'),
+            time=ev.time,
+            )
+
 
 class Frame(Window):
-    pass
+
+    def __init__(self, wid, content):
+        super().__init__(wid)
+        self.content = content
+
+    def focus(self, ev):
+        self.content.focus(ev)
