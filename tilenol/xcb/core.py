@@ -76,6 +76,20 @@ class Core(object):
         for k, lst in self.proto.enums.items():
             setattr(self, k, EnumWrapper(lst))
 
+    def init_keymap(self):
+        self.keycode_to_keysym = {}
+        self.keysym_to_keycode = {}
+        idata = self._conn.init_data
+        mapping = self.raw.GetKeyboardMapping(
+            first_keycode=idata['min_keycode'],
+            count=idata['max_keycode'] - idata['min_keycode'],
+            )
+        mapiter = iter(mapping['keysyms'])
+        for row in zip(range(idata['min_keycode'], idata['max_keycode']),
+                *(mapiter for i in range(mapping['keysyms_per_keycode']))):
+            self.keycode_to_keysym[row[0]] = row[1]
+            self.keysym_to_keycode[row[1]] = row[0]
+
     def create_toplevel(self, bounds, border=0, klass=None, params={}):
         wid = self._conn.new_xid()
         root = self._conn.init_data['roots'][0]

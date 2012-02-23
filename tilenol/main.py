@@ -1,34 +1,71 @@
+from functools import partial
 import sys
+import subprocess
 
-from .xcb import Connection, Proto, Core
+from zorro.di import DependencyInjector, di, has_dependencies, dependency
+
+from .xcb import Connection, Proto, Core, Keysyms
+from .keyregistry import KeyRegistry
+from .events import EventDispatcher
+from .window import Window
 
 
-class TilenolConn(Connection):
+@has_dependencies
+class Tilenol(object):
 
-    def event_dispatcher(self, ev):
-        print("EVENT", ev)
+    xcore = dependency(Core, 'xcore')
+    dispatcher = dependency(EventDispatcher, 'event-dispatcher')
 
+    def __init__(self, options):
+        pass
+        # extract options needed
 
-def run(options):
-    proto = Proto()
-    proto.load_xml('xproto')
-    conn = Connection(proto)
-    conn.connection()
-    core = Core(conn)
-    core.raw.ChangeWindowAttributes(
-        window=conn.init_data['roots'][0]['root'],
-        params={
-            core.CW.EventMask: core.EventMask.StructureNotify
-                             | core.EventMask.SubstructureNotify
-                             | core.EventMask.SubstructureRedirect
-                             | core.EventMask.EnterWindow
-                             | core.EventMask.LeaveWindow
-        })
-    attr = core.raw.GetWindowAttributes(
-        window=conn.init_data['roots'][0]['root'])
-    if not (attr['your_event_mask'] & core.EventMask.SubstructureRedirect):
-        print("Probably another window manager is running", file=sys.stderr)
-        return
+    def register_hotkeys(self, keys):
 
-    from zorro import sleep
-    sleep(1000)
+        keys.add_key('<W-o>', partial(
+            lambda: subprocess.Popen(['terminal'])))
+
+        keys.register_keys(self.root_window)
+
+    def run(self):
+
+        proto = Proto()
+        proto.load_xml('xproto')
+        self.conn = conn = Connection(proto)
+        conn.connection()
+        self.root_window = Window(conn.init_data['roots'][0]['root'])
+
+        inj = DependencyInjector()
+        inj['xcore'] = Core(conn)
+        inj['keysyms'] = keysyms = Keysyms()
+        keysyms.load_default()
+        keys = KeyRegistry()
+        inj['key-registry'] = inj.inject(keys)
+        inj['event-dispatcher'] = inj.inject(EventDispatcher())
+        inj.inject(self)
+
+        self.xcore.init_keymap()
+        self.register_hotkeys(keys)
+        self.setup_events()
+
+        self.loop()
+
+    def setup_events(self):
+        EM = self.xcore.EventMask
+        self.xcore.raw.ChangeWindowAttributes(
+            window=self.root_window,
+            params={
+                self.xcore.CW.EventMask: EM.StructureNotify
+                                      | EM.SubstructureNotify
+                                      | EM.SubstructureRedirect
+                                      | EM.EnterWindow
+                                      | EM.LeaveWindow
+            })
+        attr = self.xcore.raw.GetWindowAttributes(window=self.root_window)
+        if not (attr['your_event_mask'] & EM.SubstructureRedirect):
+            print("Probably another window manager is running", file=sys.stderr)
+            return
+
+    def loop(self):
+        for i in self.conn.get_events():
+            self.dispatcher.dispatch(i)

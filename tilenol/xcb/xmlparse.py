@@ -148,7 +148,7 @@ class List(object):
 
     def rich_read_from(self, buf, pos, data):
         assert self.code
-        ln = eval(self.code, {}, data)
+        ln = eval(self.code, {'length': (len(buf) - pos)//4}, data)
         res = []
         for i in range(ln):
             value, pos = self.type.read_from(buf, pos)
