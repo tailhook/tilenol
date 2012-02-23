@@ -3,7 +3,7 @@ import logging
 from zorro.di import di, has_dependencies, dependency
 
 from .keyregistry import KeyRegistry
-from .window import Window
+from .window import Window, Frame
 
 
 log = logging.getLogger(__name__)
@@ -16,6 +16,7 @@ class EventDispatcher(object):
 
     def __init__(self):
         self.windows = {}
+        self.frames = {}
 
     def dispatch(self, ev):
         meth = getattr(self, 'handle_'+ev.__class__.__name__, None)
@@ -44,12 +45,16 @@ class EventDispatcher(object):
 
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))
-        print("WIN", win, win.__dict__)
+        if win.wid in self.frames:
+            return
         if win.wid in self.windows:
             log.warning("Create notify for already existent window %x",
                 win.wid)
             # TODO(tailhook) clean up old window
         self.windows[win.wid] = win
+        if win.toplevel and not win.override:
+            frm = win.reparent()
+            self.frames[frm.wid] = frm
 
     def handle_ConfigureRequestEvent(self, ev):
         try:

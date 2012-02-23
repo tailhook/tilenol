@@ -57,15 +57,6 @@ class RawWrapper(object):
         return partial(self._conn.do_request, self._conn.proto.requests[name])
 
 
-class Window(object):
-
-    def __init__(self, wid):
-        self.wid = wid
-
-    def __repr__(self):
-        return '<{} {}>'.format(self.__class__.__name__, self.wid)
-
-
 class Core(object):
 
     def __init__(self, connection):
@@ -75,6 +66,8 @@ class Core(object):
         self.raw = RawWrapper(connection)
         for k, lst in self.proto.enums.items():
             setattr(self, k, EnumWrapper(lst))
+        self.root = self._conn.init_data['roots'][0]
+        self.root_window = self.root['root']
 
     def init_keymap(self):
         self.keycode_to_keysym = {}
@@ -92,7 +85,7 @@ class Core(object):
 
     def create_toplevel(self, bounds, border=0, klass=None, params={}):
         wid = self._conn.new_xid()
-        root = self._conn.init_data['roots'][0]
+        root = self.root
         self.raw.CreateWindow(**{
             'wid': wid,
             'root': root['root'],
@@ -107,6 +100,6 @@ class Core(object):
             'class': klass,
             'params': params,
             })
-        return Window(wid)
+        return wid
 
 

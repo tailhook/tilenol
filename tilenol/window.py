@@ -1,11 +1,10 @@
 from collections import namedtuple
 
-from zorro.di import has_dependencies, dependency
+from zorro.di import di, has_dependencies, dependency
 
 from .xcb import Core
+from .xcb.core import Rectangle
 
-
-SizeRequest = namedtuple('SizeRequest', 'x y width height border')
 
 class SizeRequest(object):
     def __init__(self, x, y, width, height, border):
@@ -33,6 +32,7 @@ class Window(object):
 
     def __init__(self, wid):
         self.wid = wid
+        self.frame = None
 
     @classmethod
     def from_notify(cls, notify):
@@ -59,4 +59,29 @@ class Window(object):
 
     def show(self):
         self.xcore.raw.MapWindow(window=self)
+        if self.frame:
+            self.frame.show()
 
+    @property
+    def toplevel(self):
+        return self.parent == self.xcore.root_window
+
+    def reparent(self):
+        s = self.size_request
+        self.frame = di(self).inject(Frame(self.xcore.create_toplevel(
+            Rectangle(s.x, s.y, s.width, s.height),
+            klass=self.xcore.WindowClass.InputOutput,
+            params={
+                self.xcore.CW.EventMask:
+                    self.xcore.EventMask.SubstructureRedirect,
+                self.xcore.CW.OverrideRedirect: True,
+            })))
+        self.xcore.raw.ReparentWindow(
+            window=self,
+            parent=self.frame,
+            x=0, y=0)
+        return self.frame
+
+
+class Frame(Window):
+    pass
