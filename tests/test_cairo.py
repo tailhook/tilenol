@@ -1,6 +1,6 @@
 import unittest
 import cairo
-from .test_basic import xcbtest
+from .test_xcb import xcbtest
 
 
 class TestConn(unittest.TestCase):
@@ -26,9 +26,9 @@ class TestConn(unittest.TestCase):
                 core.CW.EventMask:
                     core.EventMask.Exposure | core.EventMask.KeyPress,
                 })
-        core.raw.MapWindow(window=win.wid)
+        core.raw.MapWindow(window=win)
         for ev in conn.get_events():
-            if ev.__class__.__name__ == 'ExposeEvent' and ev.window == win.wid:
+            if ev.__class__.__name__ == 'ExposeEvent' and ev.window == win:
                 break
         gc = conn.new_xid()
         core.raw.CreateGC(
@@ -39,7 +39,7 @@ class TestConn(unittest.TestCase):
         assert len(bytes(img)) >= 128*128*4, len(bytes(img))
         core.raw.PutImage(
             format=core.ImageFormat.ZPixmap,
-            drawable=win.wid,
+            drawable=win,
             gc=gc,
             width=128,
             height=128,

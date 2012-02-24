@@ -61,6 +61,7 @@ class Core(object):
 
     def __init__(self, connection):
         self._conn = connection
+        self._conn.connection()
         self.proto = connection.proto
         self.atom = AtomWrapper(connection, self.proto)
         self.raw = RawWrapper(connection)

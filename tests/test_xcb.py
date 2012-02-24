@@ -104,11 +104,11 @@ class TestWrapper(unittest.TestCase):
                 core.CW.EventMask:
                     core.EventMask.Exposure | core.EventMask.KeyPress,
                 })
-        core.raw.MapWindow(window=win.wid)
+        core.raw.MapWindow(window=win)
         for ev in conn.get_events():
-            if ev.__class__.__name__ == 'ExposeEvent' and ev.window == win.wid:
+            if ev.__class__.__name__ == 'ExposeEvent' and ev.window == win:
                 break
-        attr = core.raw.GetWindowAttributes(window=win.wid)
+        attr = core.raw.GetWindowAttributes(window=win)
         self.assertTrue(attr['map_state'])
 
 
