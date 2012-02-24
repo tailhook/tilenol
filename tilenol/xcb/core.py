@@ -2,7 +2,7 @@ from functools import partial
 from collections import namedtuple
 
 
-class Rectangle(namedtuple('_Rectangle', 'left top width height')):
+class Rectangle(namedtuple('_Rectangle', 'x y width height')):
     __slots__ = ()
 
 
@@ -93,8 +93,8 @@ class Core(object):
             'depth': root['root_depth'],
             'parent': root['root'],
             'visual': root['root_visual'],
-            'x': bounds.left,
-            'y': bounds.top,
+            'x': bounds.x,
+            'y': bounds.y,
             'width': bounds.width,
             'height': bounds.height,
             'border_width': border,
