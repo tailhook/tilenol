@@ -5,6 +5,7 @@ from zorro.di import di, has_dependencies, dependency
 from .keyregistry import KeyRegistry
 from .window import Window, Frame
 from .xcb import Core, Rectangle, XError
+from .groups import GroupManager
 
 
 log = logging.getLogger(__name__)
@@ -15,19 +16,13 @@ class EventDispatcher(object):
 
     keys = dependency(KeyRegistry, 'key-registry')
     xcore = dependency(Core, 'xcore')
+    groupman = dependency(GroupManager, 'group-manager')
 
     def __init__(self):
         self.windows = {}
         self.frames = {}
         self.all_windows = {}
-
-    def __zorro_di_done__(self):
-        # TODO(tailhook) find a better place
-        from .layout.examples import Tile2
-        self.current_layout = Tile2()
-        self.current_layout.set_bounds(Rectangle(0, 0,
-            self.xcore.root['width_in_pixels'],
-            self.xcore.root['height_in_pixels']))
+        self.focused = None
 
     def dispatch(self, ev):
         meth = getattr(self, 'handle_'+ev.__class__.__name__, None)
@@ -51,12 +46,10 @@ class EventDispatcher(object):
         else:
             win.want.visible = True
             if not win.done.layouted:
-                if self.current_layout.add(win):
+                if self.groupman.add_window(win):
                     win.done.layouted = True
 
             # TODO(tailhook) find a better place
-            if self.current_layout.dirty:
-                self.current_layout.layout()
 
     def handle_EnterNotifyEvent(self, ev):
         try:
@@ -66,6 +59,7 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.focus(ev)
+            self.focused = win
 
     def handle_MapNotifyEvent(self, ev):
         try:
@@ -75,6 +69,15 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = True
+
+    def handle_UnmapNotifyEvent(self, ev):
+        try:
+            win = self.all_windows[ev.window]
+        except KeyError:
+            log.warning("Unmap notify for non-existent window %x",
+                ev.window)
+        else:
+            win.real.visible = False
 
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))

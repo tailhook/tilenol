@@ -5,12 +5,13 @@ import os.path
 
 from zorro.di import DependencyInjector, di, has_dependencies, dependency
 
-from .xcb import Connection, Proto, Core, Keysyms
+from .xcb import Connection, Proto, Core, Keysyms, Rectangle
 from .keyregistry import KeyRegistry
 from .events import EventDispatcher
 from .window import Window
 from .commands import CommandDispatcher, EnvCommands
 from .config import Config
+from .groups import Group, GroupManager
 
 
 env_defaults = {
@@ -49,15 +50,34 @@ class Tilenol(object):
         keysyms.load_default()
         keys = KeyRegistry()
         inj['key-registry'] = inj.inject(keys)
-        inj['event-dispatcher'] = inj.inject(EventDispatcher())
         inj['config'] = inj.inject(Config())
+
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
+
+        from .layout.examples import Tile2, Max, InstantMsg
+        gman = inj.inject(GroupManager(map(inj.inject, (
+                Group('1', Tile2),
+                Group('2', Max),
+                Group('3', Tile2),
+                Group('4', Tile2),
+                Group('5', Tile2),
+                Group('g', Tile2),
+                Group('i', InstantMsg),
+                Group('m', Max),
+            ))))
+        cmd['groups'] = gman
+        inj['group-manager'] = gman
+        inj['event-dispatcher'] = inj.inject(EventDispatcher())
+
         inj.inject(self)
 
         self.xcore.init_keymap()
         self.register_hotkeys(keys)
         self.setup_events()
+        gman.set_bounds(Rectangle(0, 0,
+            self.xcore.root['width_in_pixels'],
+            self.xcore.root['height_in_pixels']))
 
         self.loop()
 
@@ -67,8 +87,8 @@ class Tilenol(object):
             window=self.root_window,
             params={
                 self.xcore.CW.EventMask: EM.StructureNotify
-                                      | EM.SubstructureNotify
-                                      | EM.SubstructureRedirect
+                                       | EM.SubstructureNotify
+                                       | EM.SubstructureRedirect
             })
         attr = self.xcore.raw.GetWindowAttributes(window=self.root_window)
         if not (attr['your_event_mask'] & EM.SubstructureRedirect):

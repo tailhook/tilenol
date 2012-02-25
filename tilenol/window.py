@@ -82,6 +82,16 @@ class Window(object):
             self.frame.show()
         return True
 
+    def hide(self):
+        if not self.done.visible:
+            return False
+        self.done.visible = False
+        if self.frame:
+            self.frame.hide()
+        else:
+            self.xcore.raw.UnmapWindow(window=self)
+        return True
+
     def set_bounds(self, rect):
         if self.done.size == rect:
             return False
@@ -112,6 +122,7 @@ class Window(object):
                     | self.xcore.EventMask.SubstructureNotify # temp
                     | self.xcore.EventMask.EnterWindow
                     | self.xcore.EventMask.LeaveWindow,
+                self.xcore.CW.BackPixel: 0x0000FF,
             }), self))
         self.xcore.raw.ChangeWindowAttributes(
             window=self,
@@ -128,7 +139,7 @@ class Window(object):
     def focus(self, ev):
         self.xcore.raw.SetInputFocus(
             focus=self,
-            revert_to=getattr(self.xcore.atom, 'None'),
+            revert_to=self.xcore.InputFocus.Parent,
             time=ev.time,
             )
 
@@ -149,10 +160,10 @@ class Frame(Window):
 
     def configure_content(self, rect):
         hints = self.content.want.hints
-        x = 0
-        y = 0
+        x = 2
+        y = 2
         if hints:
-            width, height = self._apply_hints(rect.width, rect.height, hints)
+            width, height = self._apply_hints(rect.width-4, rect.height-4, hints)
             if width < rect.width:
                 x = rect.width//2 - width//2
             if height < rect.height:

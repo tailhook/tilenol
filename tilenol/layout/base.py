@@ -9,7 +9,6 @@ class LayoutMeta(type):
 
 
 class Layout(object):
-    pass
 
     @classmethod
     def get_defined_classes(cls, base):
@@ -19,3 +18,22 @@ class Layout(object):
             if isinstance(v, type) and issubclass(v, base):
                 res[k] = v
         return res
+
+    def hide_all(self):
+        for i in getattr(self, 'visible_windows', ()):
+            i.hide()
+        sub = getattr(self, 'sublayouts', None)
+        if sub:
+            for s in sub():
+                for i in s.visible_windows:
+                    print("HERE", i)
+                    i.hide()
+
+    def show_all(self):
+        for i in getattr(self, 'visible_windows', ()):
+            i.show()
+        sub = getattr(self, 'sublayouts', None)
+        if sub:
+            for s in sub():
+                for i in s.visible_windows:
+                    i.show()
