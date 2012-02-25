@@ -45,14 +45,17 @@ class Stack(object):
     def layout(self):
         if self.tile:
             vc = len(self.visible_windows)
-            start = 0
+            if self.vertical:
+                rstart = start = self.box.y
+            else:
+                rstart = start = self.box.x
             for n, w in enumerate(self.visible_windows, 1):
                 if self.vertical:
-                    end = int(floor(n/vc*self.box.height))
+                    end = rstart + int(floor(n/vc*self.box.height))
                     w.set_bounds(Rectangle(
                         self.box.x, start, self.box.width, end-start))
                 else:
-                    end = int(floor(n/vc*self.box.width))
+                    end = rstart + int(floor(n/vc*self.box.width))
                     w.set_bounds(Rectangle(
                         start, self.box.y, end-start, self.box.height))
                 w.show()
@@ -107,15 +110,16 @@ class Tile(Layout):
         else:
             all_stacks = [s for s in self.stack_list if not s.empty]
         totw = sum(s.weight for s in all_stacks)
-        start = 0
         curw = 0
         if self.vertical:
+            rstart = start = box.x
             totalpx = box.width
         else:
+            rstart = start = box.y
             totalpx = box.height
         for s in all_stacks:
             curw += s.weight
-            end = int(floor(curw/totw*totalpx))
+            end = rstart + int(floor(curw/totw*totalpx))
             if self.vertical:
                 s.box = Rectangle(start, box.y, end-start, box.height)
             else:

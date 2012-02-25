@@ -26,7 +26,6 @@ class Layout(object):
         if sub:
             for s in sub():
                 for i in s.visible_windows:
-                    print("HERE", i)
                     i.hide()
 
     def show_all(self):

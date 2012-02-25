@@ -130,6 +130,7 @@ class Window(object):
                     | self.xcore.EventMask.EnterWindow
                     | self.xcore.EventMask.LeaveWindow,
                 self.xcore.CW.BackPixel: 0x0000FF,
+                self.xcore.CW.OverrideRedirect: True,
             }), self))
         self.xcore.raw.ChangeWindowAttributes(
             window=self,

@@ -1,14 +1,28 @@
+from zorro.di import has_dependencies, dependency
 
+from .screen import ScreenManager
+
+
+@has_dependencies
 class GroupManager(object):
+
+    screenman = dependency(ScreenManager, 'screen-manager')
 
     def __init__(self, groups):
         self.groups = list(groups)
         self.current_group = self.groups[0]
         self.by_name = {g.name: g for g in self.groups}
 
-    def set_bounds(self, rect):
-        self.bounds = rect  # TODO(tailhook) keep several screens
-        self.current_group.set_bounds(rect)
+    def __zorro_di_done__(self):
+        # TODO(tailhook) implement several screens
+        scr = self.screenman.screens[0]
+        self.bounds = scr.inner_bounds
+        self.current_group.set_bounds(self.bounds)
+        scr.add_listener(self.update_screen)
+
+    def update_screen(self, screen):
+        self.bounds = screen.inner_bounds
+        self.current_group.set_bounds(self.bounds)
 
     def add_window(self, win):
         self.current_group.add_window(win)

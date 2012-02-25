@@ -12,6 +12,7 @@ from .window import Window
 from .commands import CommandDispatcher, EnvCommands
 from .config import Config
 from .groups import Group, GroupManager
+from .screen import ScreenManager
 
 
 env_defaults = {
@@ -45,12 +46,15 @@ class Tilenol(object):
         self.root_window = Window(conn.init_data['roots'][0]['root'])
 
         inj = DependencyInjector()
-        inj['xcore'] = Core(conn)
+        inj['xcore'] = xcore = Core(conn)
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
         keys = KeyRegistry()
         inj['key-registry'] = inj.inject(keys)
         inj['config'] = inj.inject(Config())
+        # TODO(tailhook) query xinerama screens
+        inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
+            xcore.root['width_in_pixels'], xcore.root['height_in_pixels'])])
 
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
@@ -75,9 +79,11 @@ class Tilenol(object):
         self.xcore.init_keymap()
         self.register_hotkeys(keys)
         self.setup_events()
-        gman.set_bounds(Rectangle(0, 0,
-            self.xcore.root['width_in_pixels'],
-            self.xcore.root['height_in_pixels']))
+
+        from .widgets import Bar, Groupbox
+        self.bar = inj.inject(Bar([
+            inj.inject(Groupbox()),
+            ]))
 
         self.loop()
 
