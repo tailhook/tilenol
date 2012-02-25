@@ -1,5 +1,19 @@
 from functools import partial
 from collections import namedtuple
+import struct
+
+
+fmtlen = {
+    0: 0,
+    8: 1,
+    16: 2,
+    32: 4,
+    }
+fmtchar = {
+    8: 'B',
+    16: 'H',
+    32: 'L',
+    }
 
 
 class Rectangle(namedtuple('_Rectangle', 'x y width height')):
@@ -27,8 +41,11 @@ class AtomWrapper(object):
     def __init__(self, connection, proto):
         self._conn = connection
         self.proto = proto
+        self._atoms = {}
         for k, v in self.proto.enums['Atom'].items():
-            setattr(self, k, Atom(v, k))
+            atom = Atom(v, k)
+            self._atoms[v] = atom
+            setattr(self, k, atom)
 
     def __getattr__(self, name):
         assert name.isidentifier()
@@ -37,8 +54,20 @@ class AtomWrapper(object):
             name=name,
             )
         atom = Atom(props['atom'], name)
+        self._atoms[props['atom']] = atom
         setattr(self, name, atom)
         return atom
+
+    def __getitem__(self, value):
+        try:
+            return self._atoms[value]
+        except KeyError:
+            props = self._conn.do_request(self.proto.requests['GetAtomName'],
+                atom=value)
+            atom = Atom(value, props['name'])
+            self._atoms[value] = atom
+            setattr(self, props['name'], atom)
+            return atom
 
 
 class EnumWrapper(object):
@@ -102,5 +131,23 @@ class Core(object):
             'params': params,
             })
         return wid
+
+    def get_property(self, win, name):
+        result = self.raw.GetProperty(
+                delete=False,
+                window=win,
+                property=name,
+                type=self.atom.Any,
+                long_offset=0,
+                long_length=65536)
+        typ = self.atom[result['type']]
+        if result['format'] == 0:
+            return typ, None
+        elif typ in (self.atom.STRING, self.atom.UTF8_STRING):
+            return typ, result['value'].decode('utf-8')
+        return typ, struct.unpack('<{}{}'.format(
+            len(result['value']) // fmtlen[result['format']],
+            fmtchar[result['format']]),
+            result['value'])
 
 

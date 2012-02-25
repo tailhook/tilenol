@@ -48,9 +48,16 @@ class Stack(object):
                     end = int(floor(n/vc*self.box.width))
                     w.set_bounds(Rectangle(
                         start, self.box.y, end-start, self.box.height))
+                w.show()
                 start = end
         elif self.visible_windows:
-            self.visible_windows[0].set_bounds(self.box)
+            win = self.visible_windows[0]
+            win.set_bounds(self.box)
+            win.show()
+            for i in self.windows:
+                if i is not win:
+                    i.hide()
+
 
     @property
     def empty(self):

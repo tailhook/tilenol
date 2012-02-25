@@ -73,6 +73,9 @@ class Struct(Basic):
         return data, pos
 
     def write_to(self, buf, value):
+        for field in self.items.values():
+            if hasattr(field, 'add_data'):
+                field.add_data(value)  # hack for valueparam
         for name, field in self.items.items():
             if isinstance(name, int):
                 field.write_to(buf, None)
@@ -159,7 +162,8 @@ class List(object):
         assert self.code is None
         buf.extend(memoryview(value))
 
-class String(object):
+
+class Bytes(object):
 
     def __init__(self, code):
         self.code = code
@@ -171,24 +175,38 @@ class String(object):
         return value, pos+ln
 
     def write_to(self, buf, value):
+        buf += value
+
+
+class String(Bytes):
+
+    def rich_read_from(self, buf, pos, data):
+        value, pos = super().rich_read_from(buf, pos, data)
+        return value.decode('utf-8'), pos
+
+    def write_to(self, buf, value):
         if isinstance(value, str):
             value = value.encode('utf-8')
-        buf += value
+        super().write_to(buf, value)
 
 
 class Params(object):
 
-    def __init__(self, mask_type):
-        self.mask_type = mask_type
+    def __init__(self, list_name, mask_name):
+        self.mask_name = mask_name
+        self.list_name = list_name
 
-    def write_to(self, buf, dic):
+    def add_data(self, items):
+        dic = items['params']
         mask = 0
-        pos = len(buf)
-        lst = []
         for k in sorted(dic):
             mask |= k
+        items[self.mask_name] = mask
+
+    def write_to(self, buf, dic):
+        lst = []
+        for k in sorted(dic):
             lst.append(dic[k])
-        self.mask_type.write_to(buf, mask)
         buf += struct.pack('<{0}L'.format(len(lst)), *lst)
 
 
@@ -242,12 +260,16 @@ class Proto(object):
                     code = None
                 if field.attrib['type'] == 'char':
                     typ = String(code)
+                elif field.attrib['type'] == 'void':
+                    typ = Bytes(code)
                 else:
                     typ = List(code, self.types[field.attrib['type']])
                 items[field.attrib['name']] = typ
             elif field.tag == 'valueparam':
-                items['params'] = Params(self.types[
-                    field.attrib['value-mask-type']])
+                name = field.attrib['value-mask-name']
+                if name not in items:
+                    items[name] = self.types[field.attrib['value-mask-type']]
+                items['params'] = Params(field.attrib['value-list-name'], name)
             elif field.tag == 'exprfield':
                 print(field.tag)
                 # TODO(tailhook) implement exprfield
@@ -300,9 +322,11 @@ class Proto(object):
             assert xml.text.isidentifier(), xml.text
             return xml.text
         elif xml.tag == 'op':
-            assert xml.attrib['op'] in '+-*/'
-            return '(' + xml.attrib['op'].join(
-                map(self._parse_expr, xml.iterfind('*'))) + ')'
+            op = xml.attrib['op']
+            assert op in '+-*/'
+            if op == '/':
+                op = '//'
+            return '('+ op.join(map(self._parse_expr, xml.iterfind('*'))) +')'
         elif xml.tag == 'value':
             return str(int(xml.text))
         else:
