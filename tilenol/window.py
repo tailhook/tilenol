@@ -157,6 +157,7 @@ class Frame(Window):
                 x = rect.width//2 - width//2
             if height < rect.height:
                 y = rect.height//2 - height//2
+            # TODO(tailhook) obey gravity
         else:
             width = rect.width
             height = rect.height
@@ -189,7 +190,7 @@ class Frame(Window):
                            getattr(hints, 'min_height', None))
             n = (height - base)//incr
             height = base + n*incr
-        # TODO(tailhook) honor aspect ratio
+        # TODO(tailhook) obey aspect ratio
         return width, height
 
 

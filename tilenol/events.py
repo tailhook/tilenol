@@ -4,7 +4,7 @@ from zorro.di import di, has_dependencies, dependency
 
 from .keyregistry import KeyRegistry
 from .window import Window, Frame
-from .xcb import Core, Rectangle
+from .xcb import Core, Rectangle, XError
 
 
 log = logging.getLogger(__name__)
@@ -107,5 +107,9 @@ class EventDispatcher(object):
             log.warning("Property notify event for non-existent window %x",
                 ev.window)
         else:
-            win.set_property(self.xcore.atom[ev.atom].name,
-                  *self.xcore.get_property(ev.window, ev.atom))
+            try:
+                win.set_property(self.xcore.atom[ev.atom].name,
+                      *self.xcore.get_property(ev.window, ev.atom))
+            except XError:
+                log.exception("Error getting property for window %x",
+                    ev.window)
