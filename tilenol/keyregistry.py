@@ -47,22 +47,39 @@ class KeyRegistry(object):
         modmask, keysym = self.parse_key(m.group(0))
         self.keys[modmask, keysym] = handler
 
+    def init_modifiers(self):
+        # TODO(tailhook) probably calculate them instead of hardcoding
+        caps = self.core.ModMask.Lock  # caps lock
+        num = getattr(self.core.ModMask, '2')  # mod2 is usually numlock
+        mode = getattr(self.core.ModMask, '5')  # mod5 is usually mode_switch
+        self.extra_modifiers = [0,
+            caps,
+            num,
+            mode,
+            caps|num,
+            num|mode,
+            caps|num|mode,
+            ]
+        self.modifiers_mask = ~(caps|num|mode)
+
     def register_keys(self, win):
+        self.init_modifiers()
         for mod, key in self.keys:
             kcode = self.core.keysym_to_keycode[key]
-            self.core.raw.GrabKey(
-                owner_events=False,
-                grab_window=win,
-                modifiers=mod,
-                key=kcode,
-                keyboard_mode=self.core.GrabMode.Async,
-                pointer_mode=self.core.GrabMode.Async,
-                )
+            for extra in self.extra_modifiers:
+                self.core.raw.GrabKey(
+                    owner_events=False,
+                    grab_window=win,
+                    modifiers=mod|extra,
+                    key=kcode,
+                    keyboard_mode=self.core.GrabMode.Async,
+                    pointer_mode=self.core.GrabMode.Async,
+                    )
 
     def dispatch_event(self, event):
         try:
             kcode = self.core.keycode_to_keysym[event.detail]
-            handler = self.keys[event.state, kcode]
+            handler = self.keys[event.state & self.modifiers_mask, kcode]
         except KeyError:
             return False
         else:
