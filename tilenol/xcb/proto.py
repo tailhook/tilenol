@@ -265,7 +265,7 @@ class Connection(object):
     def parse_error(self, buf):
         typ = self.proto.errors_by_num[buf[1]]
         err, pos = typ.read_from(buf, 6)
-        assert len(buf) == max(pos, 26)
+        assert len(buf) == max(pos, 30), (len(buf), pos, buf)
         raise XError(typ, err)
 
     def do_request(self, rtype, **kw):
