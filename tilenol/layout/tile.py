@@ -35,6 +35,13 @@ class Stack(object):
             # TODO(tailhook) check if we should leave top (focused) window
             self.visible_windows = [win]
 
+    def remove(self, win):
+        self.windows.remove(win)
+        self.visible_windows.remove(win)
+        if not self.visible_windows and self.windows:
+            # TODO(tailhook) may be select next window instead of first one
+            self.visible_windows = self.windows[0]
+
     def layout(self):
         if self.tile:
             vc = len(self.visible_windows)
@@ -121,9 +128,14 @@ class Tile(Layout):
                 if not self.fixed and s.empty:
                     self.boxes_dirty = True
                 s.add(win)
+                win.lprops.stack = s.__class__.__name__
                 self.dirty = True
                 return True
         return False  # no empty stacks, reject it, so it will be floating
+
+    def remove(self, win):  # layout API
+        self.stacks[win.lprops.stack].remove(win)
+        win.lprops.clear()
 
     def sublayouts(self):  # layout focus API
         return self.stacks.values()

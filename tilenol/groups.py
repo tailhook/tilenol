@@ -36,6 +36,15 @@ class Group(object):
 
     def add_window(self, win):
         self.current_layout.add(win)
+        win.group = self
+        # TODO(tailhook) may be optimize dirty flag?
+        if self.current_layout.dirty:
+            self.current_layout.layout()
+
+    def remove_window(self, win):
+        assert win.group == self
+        self.current_layout.remove(win)
+        del win.group
         # TODO(tailhook) may be optimize dirty flag?
         if self.current_layout.dirty:
             self.current_layout.layout()

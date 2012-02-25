@@ -45,9 +45,8 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.want.visible = True
-            if not win.done.layouted:
-                if self.groupman.add_window(win):
-                    win.done.layouted = True
+            if not hasattr(win, 'group'):
+                self.groupman.add_window(win)
 
             # TODO(tailhook) find a better place
 
@@ -93,6 +92,17 @@ class EventDispatcher(object):
             frm = win.reparent()
             self.frames[frm.wid] = frm
             self.all_windows[frm.wid] = frm
+
+    def handle_DestroyNotifyEvent(self, ev):
+        try:
+            win = self.all_windows[ev.window]
+        except KeyError:
+            log.warning("Destroy notify for non-existent window %x",
+                ev.window)
+        else:
+            if hasattr(win, 'group'):
+                win.group.remove_window(win)
+            win.destroyed()
 
     def handle_ConfigureRequestEvent(self, ev):
         try:

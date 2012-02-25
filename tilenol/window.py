@@ -25,13 +25,19 @@ class SizeRequest(object):
             border=notify.border_width,
             )
 
+
 class State(object):
     size = None
     visible = False
     hints = None
 
-class DoneState(State):
-    layouted = False
+
+class LayoutProperties(object):
+
+    def clear(self):
+        self.__dict__.clear()
+
+    # TODO(tailhook) expose layout properties to x properties
 
 
 @has_dependencies
@@ -43,9 +49,10 @@ class Window(object):
         self.wid = wid
         self.frame = None
         self.want = State()
-        self.done = DoneState()
+        self.done = State()
         self.real = State()
         self.props = {}
+        self.lprops = LayoutProperties()
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.wid)
@@ -147,6 +154,13 @@ class Window(object):
         if name == 'WM_NORMAL_HINTS':
             self.want.hints = SizeHints.from_property(typ, value)
         self.props[name] = value
+
+    def destroyed(self):
+        if self.frame:
+            return self.frame.destroy()
+
+    def destroy(self):
+        self.xcore.raw.DestroyWindow(window=self)
 
 
 class Frame(Window):
