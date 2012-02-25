@@ -75,7 +75,6 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = True
-            print("MAPPED", win)
 
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))
@@ -99,7 +98,6 @@ class EventDispatcher(object):
             log.warning("Configure request for non-existent window %x",
                 ev.window)
         else:
-            print("REQUEST", ev)
             win.update_size_request(ev)
 
     def handle_PropertyNotifyEvent(self, ev):

@@ -4,6 +4,7 @@ from zorro.di import di, has_dependencies, dependency
 
 from .xcb import Core
 from .xcb.core import Rectangle
+from .icccm import SizeHints
 
 
 class SizeRequest(object):
@@ -27,6 +28,7 @@ class SizeRequest(object):
 class State(object):
     size = None
     visible = False
+    hints = None
 
 class DoneState(State):
     layouted = False
@@ -131,6 +133,8 @@ class Window(object):
             )
 
     def set_property(self, name, typ, value):
+        if name == 'WM_NORMAL_HINTS':
+            self.want.hints = SizeHints.from_property(typ, value)
         self.props[name] = value
 
 
@@ -143,13 +147,54 @@ class Frame(Window):
     def focus(self, ev):
         self.content.focus(ev)
 
+    def configure_content(self, rect):
+        hints = self.content.want.hints
+        x = 0
+        y = 0
+        if hints:
+            width, height = self._apply_hints(rect.width, rect.height, hints)
+            if width < rect.width:
+                x = rect.width//2 - width//2
+            if height < rect.height:
+                y = rect.height//2 - height//2
+        else:
+            width = rect.width
+            height = rect.height
+        self.xcore.raw.ConfigureWindow(window=self.content, params={
+            self.xcore.ConfigWindow.X: x,
+            self.xcore.ConfigWindow.Y: y,
+            self.xcore.ConfigWindow.Width: width,
+            self.xcore.ConfigWindow.Height: height,
+            })
+
+
+    def _apply_hints(self, width, height, hints):
+        if hasattr(hints, 'max_width') and width < hints.min_width:
+            width = hints.min_width
+        elif hasattr(hints, 'max_height') and width > hints.max_width:
+            width = hints.max_width
+        elif hasattr(hints, 'width_inc'):
+            incr = hints.width_inc
+            base = getattr(hints, 'base_width',
+                           getattr(hints, 'min_width', None))
+            n = (width - base)//incr
+            width = base + n*incr
+        if hasattr(hints, 'max_height') and height < hints.min_height:
+            height = hints.min_height
+        elif hasattr(hints, 'max_height') and height > hints.max_height:
+            height = hints.max_height
+        elif hasattr(hints, 'height_inc'):
+            incr = hints.height_inc
+            base = getattr(hints, 'base_height',
+                           getattr(hints, 'min_height', None))
+            n = (height - base)//incr
+            height = base + n*incr
+        # TODO(tailhook) honor aspect ratio
+        return width, height
+
+
     def set_bounds(self, rect):
         if not super().set_bounds(rect):
             return False
-        self.xcore.raw.ConfigureWindow(window=self.content, params={
-            self.xcore.ConfigWindow.X: 0,
-            self.xcore.ConfigWindow.Y: 0,
-            self.xcore.ConfigWindow.Width: rect.width,
-            self.xcore.ConfigWindow.Height: rect.height,
-            })
+        self.configure_content(rect)
         return True
