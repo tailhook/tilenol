@@ -4,6 +4,7 @@ import re
 import errno
 import struct
 import traceback
+import logging
 from math import ceil
 from functools import partial
 from collections import namedtuple, deque
@@ -11,6 +12,9 @@ from collections import namedtuple, deque
 from zorro import channel, Lock, gethub, Condition, Future
 
 from .auth import read_auth
+
+
+log = logging.getLogger(__name__)
 
 
 class XError(Exception):
@@ -128,7 +132,7 @@ class Channel(channel.PipelinedReqChannel):
             lst = traceback.format_list(tb)
             lst.extend(traceback.format_exception_only(
                 XError, XError(typ, err)))
-            print(''.join(lst))  # TODO(tailhook) use logging
+            log.error("Error in asynchronous request\n%s", ''.join(lst))
 
     def _stop_producing(self):
         prod = self._producing
