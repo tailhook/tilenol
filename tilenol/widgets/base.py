@@ -13,8 +13,8 @@ class Widget(metaclass=ABCMeta):
         self.right = right
 
     @abstractmethod
-    def draw(self, canvas):
-        return 0
+    def draw(self, canvas, left, right):
+        return left, right
 
 
 class Sep(Widget):
@@ -27,14 +27,15 @@ class Sep(Widget):
         self.padding = padding
         self.color = color
 
-    def draw(self, canvas):
+    def draw(self, canvas, l, r):
         if self.right:
-            l, t, r, b = canvas.clip_extents()
             x = r - self.padding.right
+            r -= self.padding.left + self.padding.right
         else:
-            x = self.padding.left
+            x = l + self.padding.left
+            l += self.padding.left + self.padding.right
         canvas.set_source(self.color)
         canvas.move_to(x, self.padding.top)
         canvas.line_to(x, self.height - self.padding.bottom)
         canvas.stroke()
-        return self.padding.left + self.padding.right
+        return l, r

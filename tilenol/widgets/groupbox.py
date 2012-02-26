@@ -26,11 +26,11 @@ class Groupbox(Widget):
         self.padding = padding
 
 
-    def draw(self, canvas):
+    def draw(self, canvas, l, r):
         assert not self.right, "Sorry, right not implemented"
         canvas.select_font_face(self.font_face)
         canvas.set_font_size(self.font_size)
-        x = self.padding.left
+        x = l + self.padding.left
         between = self.padding.right + self.padding.left
         for g in self.gman.groups:
             sx, sy, w, h, _, _ = canvas.text_extents(g.name)
@@ -38,4 +38,4 @@ class Groupbox(Widget):
             canvas.move_to(x, self.height - self.padding.bottom)
             canvas.show_text(g.name)
             x += w + between
-        return x - self.padding.right
+        return x - self.padding.left, r

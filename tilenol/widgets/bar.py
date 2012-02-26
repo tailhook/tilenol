@@ -65,8 +65,10 @@ class Bar(object):
 
     def expose(self, rect):
         region = self.cairo
+        l = 0
+        r = self.width
         for i in self.widgets:
-            i.draw(self.cairo)
+            l, r = i.draw(self.cairo, l, r)
         self.xcore.raw.PutImage(
             format=self.xcore.ImageFormat.ZPixmap,
             drawable=self.window,

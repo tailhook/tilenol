@@ -84,8 +84,10 @@ class Tilenol(object):
         self.bar = inj.inject(Bar([
             inj.inject(Groupbox()),
             inj.inject(Sep()),
-            inj.inject(Sep(right=True)),
+            inj.inject(Clock()),
+            inj.inject(Sep()),
             inj.inject(Clock(right=True)),
+            inj.inject(Sep(right=True)),
             ]))
         self.bar.create_window()
 

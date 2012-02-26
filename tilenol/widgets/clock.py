@@ -25,17 +25,18 @@ class Clock(Widget):
     def _time(self):
         return datetime.datetime.now().strftime(self.format)
 
-    def draw(self, canvas):
+    def draw(self, canvas, l, r):
         canvas.select_font_face(self.font_face)
         canvas.set_font_size(self.font_size)
         canvas.set_source(self.color)
         tm = self._time()
         _, _, w, h, _, _ = canvas.text_extents(tm)
         if self.right:
-            l, t, r, b = canvas.clip_extents()
-            canvas.move_to(r - self.padding.right - w,
-                           self.height - self.padding.bottom)
+            x = r - self.padding.right - w
+            r -= self.padding.left + self.padding.right + w
         else:
-            canvas.move_to(self.padding.left, self.height - self.padding.bottom)
+            x = l + self.padding.left
+            l += self.padding.left + self.padding.right + w
+        canvas.move_to(x, self.height - self.padding.bottom)
         canvas.show_text(tm)
-        return w
+        return l, r
