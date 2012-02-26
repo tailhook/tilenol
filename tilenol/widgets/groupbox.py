@@ -1,20 +1,15 @@
-from collections import namedtuple
 
-from cairo import SolidPattern, ScaledFont
+from cairo import SolidPattern
 from zorro.di import dependency, has_dependencies
 
 from tilenol.groups import GroupManager
-from . import Widget
-
-
-Padding = namedtuple('Padding', 'top right bottom left')
+from .base import Widget, Padding
 
 
 @has_dependencies
 class Groupbox(Widget):
 
     gman = dependency(GroupManager, 'group-manager')
-
 
     def __init__(self, *,
             font_face="Consolas",

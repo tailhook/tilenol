@@ -80,9 +80,10 @@ class Tilenol(object):
         self.register_hotkeys(keys)
         self.setup_events()
 
-        from .widgets import Bar, Groupbox
+        from .widgets import Bar, Groupbox, Clock
         self.bar = inj.inject(Bar([
             inj.inject(Groupbox()),
+            inj.inject(Clock()),
             ]))
         self.bar.create_window()
 
