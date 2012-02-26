@@ -36,7 +36,7 @@ class TestConn(unittest.TestCase):
             drawable=conn.init_data['roots'][0]['root'],
             params={},
             )
-        assert len(bytes(img)) >= 128*128*4, len(bytes(img))
+        assert len(bytes(img)) == 128*128*4, len(bytes(img))
         core.raw.PutImage(
             format=core.ImageFormat.ZPixmap,
             drawable=win,
@@ -47,7 +47,7 @@ class TestConn(unittest.TestCase):
             dst_y=0,
             left_pad=0,
             depth=24,
-            data=bytes(img)[:128*128*4],
+            data=bytes(img),
             )
         core.raw.GetAtomName(atom=1)  # ensures putimage error will be printed
 
