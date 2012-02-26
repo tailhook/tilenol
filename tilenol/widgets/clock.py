@@ -13,18 +13,14 @@ class Clock(Widget):
             font_size=18,
             color=SolidPattern(1, 1, 1),
             format="%H:%M:%S %d.%m.%Y",
-            padding=Padding(2, 4, 8, 4)):
+            padding=Padding(2, 4, 8, 4),
+            right=False):
+        super().__init__(right=right)
         self.font_face = font_face
         self.font_size = font_size
         self.color = color
         self.padding = padding
         self.format = format
-
-    def size(self, canvas):
-        canvas.select_font_face(self.font_face)
-        canvas.set_font_size(self.font_size)
-        _, _, w, h, _, _ = canvas.text_extents(self._time())
-        return w
 
     def _time(self):
         return datetime.datetime.now().strftime(self.format)
@@ -32,5 +28,14 @@ class Clock(Widget):
     def draw(self, canvas):
         canvas.select_font_face(self.font_face)
         canvas.set_font_size(self.font_size)
-        canvas.move_to(self.padding.left, self.height - self.padding.bottom)
-        canvas.show_text(self._time())
+        canvas.set_source(self.color)
+        tm = self._time()
+        _, _, w, h, _, _ = canvas.text_extents(tm)
+        if self.right:
+            l, t, r, b = canvas.clip_extents()
+            canvas.move_to(r - self.padding.right - w,
+                           self.height - self.padding.bottom)
+        else:
+            canvas.move_to(self.padding.left, self.height - self.padding.bottom)
+        canvas.show_text(tm)
+        return w
