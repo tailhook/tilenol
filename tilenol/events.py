@@ -31,6 +31,9 @@ class EventDispatcher(object):
         else:
             print("EVENT", ev)
 
+    def register_window(self, win):
+        self.all_windows[win.wid] = win
+
     def handle_KeyPressEvent(self, ev):
         self.keys.dispatch_event(ev)
 
@@ -80,12 +83,12 @@ class EventDispatcher(object):
 
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))
-        if win.wid in self.frames:
-            return
         if win.wid in self.windows:
             log.warning("Create notify for already existent window %x",
                 win.wid)
             # TODO(tailhook) clean up old window
+        if win.wid in self.all_windows:
+            return
         self.windows[win.wid] = win
         self.all_windows[win.wid] = win
         if win.toplevel and not win.override:
@@ -126,3 +129,12 @@ class EventDispatcher(object):
             except XError:
                 log.exception("Error getting property for window %x",
                     ev.window)
+
+    def handle_ExposeEvent(self, ev):
+        try:
+            win = self.all_windows[ev.window]
+        except KeyError:
+            log.warning("Expose event for non-existent window %x",
+                ev.window)
+        else:
+            win.expose(Rectangle(ev.x, ev.y, ev.width, ev.height))

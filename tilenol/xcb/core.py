@@ -98,6 +98,9 @@ class Core(object):
             setattr(self, k, EnumWrapper(lst))
         self.root = self._conn.init_data['roots'][0]
         self.root_window = self.root['root']
+        pad = self._conn.init_data['bitmap_format_scanline_pad']
+        assert pad % 8 == 0
+        self.bitmap_stride = pad//8
 
     def init_keymap(self):
         self.keycode_to_keysym = {}

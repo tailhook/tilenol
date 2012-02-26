@@ -136,7 +136,6 @@ class Window(object):
             window=self,
             params={
                 self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
-                    | self.xcore.EventMask.Exposure, # temp
             })
         self.xcore.raw.ReparentWindow(
             window=self,
@@ -162,6 +161,16 @@ class Window(object):
 
     def destroy(self):
         self.xcore.raw.DestroyWindow(window=self)
+
+
+class DisplayWindow(Window):
+
+    def __init__(self, wid, expose_handler):
+        super().__init__(wid)
+        self.expose_handler = expose_handler
+
+    def expose(self, rect):
+        self.expose_handler(rect)
 
 
 class Frame(Window):

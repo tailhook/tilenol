@@ -21,7 +21,7 @@ class Groupbox(Widget):
             font_size=18,
             inactive_color=SolidPattern(0.5, 0.5, 0.5),
             active_color=SolidPattern(1, 1, 1),
-            padding=Padding(2, 2, 2, 2)):
+            padding=Padding(2, 4, 8, 4)):
         self.font_face = font_face
         self.font_size = font_size
         self.inactive_color = inactive_color
@@ -35,20 +35,18 @@ class Groupbox(Widget):
         x = self.padding.left
         between = self.padding.right + self.padding.left
         for g in self.gman.groups:
+            sx, sy, w, h, _, _ = canvas.text_extents(g.name)
             canvas.set_source(self.active_color)
-            canvas.move_to(x, self.padding.top)
-            canvas.show_text(g)
-            ext = canvas.text_extents(g)
-            x += ext.width + between
+            canvas.move_to(x, self.height - self.padding.bottom)
+            canvas.show_text(g.name)
+            x += w + between
 
     def size(self, canvas):
         canvas.select_font_face(self.font_face)
         canvas.set_font_size(self.font_size)
         width = 0
-        height = 0
         for g in self.gman.groups:
-            ext = canvas.text_extents()
+            _, _, w, h, _, _ = canvas.text_extents(g.name)
             width += ext.width
-            height = max(ext.height + self.padding.top + self.padding.bottom)
             width += self.padding.left + self.padding.right
-        return width, height
+        return width
