@@ -25,7 +25,6 @@ class Screen(object):
             h -= bar.height
         # TODO(tailhook) impement other bars
         self.inner_bounds = Rectangle(x, y, w, h)
-        print("INNER", self.inner_bounds)
         for l in self.listeners:
             l(self)
 
