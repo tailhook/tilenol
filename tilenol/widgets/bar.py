@@ -68,7 +68,9 @@ class Bar(object):
         l = 0
         r = self.width
         for i in self.widgets:
+            self.cairo.save()
             l, r = i.draw(self.cairo, l, r)
+            self.cairo.restore()
         self.xcore.raw.PutImage(
             format=self.xcore.ImageFormat.ZPixmap,
             drawable=self.window,

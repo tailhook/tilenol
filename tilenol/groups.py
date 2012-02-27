@@ -44,13 +44,19 @@ class Group(object):
         self.default_layout = layout_class
         self.current_layout = layout_class()
         self.floating_windows = []
+        self.all_windows = []
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.name)
 
+    @property
+    def empty(self):
+        return not self.all_windows
+
     def add_window(self, win):
         self.current_layout.add(win)
         win.group = self
+        self.all_windows.append(win)
         # TODO(tailhook) may be optimize dirty flag?
         if self.current_layout.dirty:
             self.current_layout.layout()
@@ -58,6 +64,7 @@ class Group(object):
     def remove_window(self, win):
         assert win.group == self
         self.current_layout.remove(win)
+        self.all_windows.remove(win)
         del win.group
         # TODO(tailhook) may be optimize dirty flag?
         if self.current_layout.dirty:
