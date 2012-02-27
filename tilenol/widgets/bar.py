@@ -7,6 +7,7 @@ from tilenol.xcb import Core, Rectangle
 from tilenol.screen import ScreenManager
 from tilenol.window import DisplayWindow
 from tilenol.events import EventDispatcher
+from tilenol.event import Event
 
 
 @has_dependencies
@@ -16,10 +17,12 @@ class Bar(object):
     screenman = dependency(ScreenManager, 'screen-manager')
     dispatcher = dependency(EventDispatcher, 'event-dispatcher')
 
+    redraw = Event('bar.redraw')
+
     def __init__(self, widgets,
                  screen_no=0,
                  height=24,
-                 background=0x000000,
+                 background=cairo.SolidPattern(0, 0, 0),
                  ):
         self.widgets = widgets
         self.screen_no = screen_no
@@ -27,12 +30,18 @@ class Bar(object):
         self.background = background
         for w in widgets:
             w.height = self.height
+        self.redraw.listen(self.expose)
 
     def __zorro_di_done__(self):
+        inj = di(self).clone()
+        inj['bar'] = self
+        for w in self.widgets:
+            inj.inject(w)
         scr = self.screenman.screens[self.screen_no]
         scr.add_top_bar(self)
         scr.add_listener(self.update_screen)
         self.update_screen(scr)
+        self.redraw.emit()
 
     def update_screen(self, screen):
         # we have limit on the size of the bar until BIG-REQUESTS or SHM
@@ -57,14 +66,16 @@ class Bar(object):
             params={
                 CW.EventMask: EM.Exposure,
                 CW.OverrideRedirect: True,
-                CW.BackPixel: self.background
             }), self.expose)
         di(self).inject(self.window)
         self.dispatcher.register_window(self.window)
         self.window.show()
 
-    def expose(self, rect):
-        region = self.cairo
+    def expose(self, rect=None):
+        # TODO(tailhook) set clip region to specified rectangle
+        self.cairo.set_source(self.background)
+        self.cairo.rectangle(0, 0, self.width, self.height)
+        self.cairo.fill()
         l = 0
         r = self.width
         for i in self.widgets:

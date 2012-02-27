@@ -82,10 +82,10 @@ class Tilenol(object):
 
         from .widgets import Bar, Groupbox, Clock, Sep
         self.bar = inj.inject(Bar([
-            inj.inject(Groupbox()),
-            inj.inject(Sep()),
-            inj.inject(Clock(right=True)),
-            inj.inject(Sep(right=True)),
+            Groupbox(),
+            Sep(),
+            Clock(right=True),
+            Sep(right=True),
             ]))
         self.bar.create_window()
 

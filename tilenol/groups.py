@@ -1,12 +1,16 @@
 from zorro.di import has_dependencies, dependency
 
 from .screen import ScreenManager
+from .event import Event
 
 
 @has_dependencies
 class GroupManager(object):
 
     screenman = dependency(ScreenManager, 'screen-manager')
+
+    group_changed = Event('group-manager.group_changed')
+    window_added = Event('group-manager.window_added')
 
     def __init__(self, groups):
         self.groups = list(groups)
@@ -26,6 +30,7 @@ class GroupManager(object):
 
     def add_window(self, win):
         self.current_group.add_window(win)
+        self.window_added.emit()
 
     def cmd_switch(self, name):
         ngr = self.by_name[name]
@@ -35,6 +40,7 @@ class GroupManager(object):
         self.current_group = ngr
         self.current_group.set_bounds(self.bounds)
         ngr.show()
+        self.group_changed.emit()
 
 
 class Group(object):

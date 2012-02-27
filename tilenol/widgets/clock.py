@@ -1,6 +1,8 @@
 import datetime
+import time
 
 from zorro.di import dependency, has_dependencies
+from zorro import gethub, sleep
 from cairo import SolidPattern
 
 from  .base import Widget, Padding
@@ -21,6 +23,17 @@ class Clock(Widget):
         self.color = color
         self.padding = padding
         self.format = format
+
+    def __zorro_di_done__(self):
+        gethub().do_spawnhelper(self._update_time)
+
+    def _update_time(self):
+        while True:
+            tts = 1.0 - (time.time() % 1.0)
+            if tts < 0.001:
+                tts = 1
+            sleep(tts)
+            self.bar.redraw.emit()
 
     def _time(self):
         return datetime.datetime.now().strftime(self.format)

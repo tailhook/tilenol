@@ -138,3 +138,5 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.expose(Rectangle(ev.x, ev.y, ev.width, ev.height))
+
+

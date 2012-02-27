@@ -17,7 +17,7 @@ class Groupbox(Widget):
             inactive_color=SolidPattern(0.5, 0.5, 0.5),
             active_color=SolidPattern(1, 1, 1),
             selected_color=SolidPattern(0.3, 0.3, 0.6),
-            padding=Padding(2, 6, 7, 4),
+            padding=Padding(2, 4, 7, 4),
             right=False):
         super().__init__(right=right)
         self.font_face = font_face
@@ -27,6 +27,9 @@ class Groupbox(Widget):
         self.selected_color = selected_color
         self.padding = padding
 
+    def __zorro_di_done__(self):
+        self.gman.group_changed.listen(self.bar.redraw.emit)
+        self.gman.window_added.listen(self.bar.redraw.emit)
 
     def draw(self, canvas, l, r):
         assert not self.right, "Sorry, right not implemented"
@@ -34,19 +37,20 @@ class Groupbox(Widget):
         canvas.set_font_size(self.font_size)
         canvas.set_line_join(LINE_JOIN_ROUND)
         canvas.set_line_width(2)
-        x = l + self.padding.left
+        x = l
         between = self.padding.right + self.padding.left
         for g in self.gman.groups:
-            sx, sy, w, h, _, _ = canvas.text_extents(g.name)
+            sx, sy, w, h, ax, ay = canvas.text_extents(g.name)
             if g.empty:
                 canvas.set_source(self.inactive_color)
             else:
                 canvas.set_source(self.active_color)
-            canvas.move_to(x, self.height - self.padding.bottom)
+            canvas.move_to(x + self.padding.left,
+                           self.height - self.padding.bottom)
             canvas.show_text(g.name)
             if self.gman.current_group is g:
                 canvas.set_source(self.selected_color)
-                canvas.rectangle(l + 2, 2, w + between - 4, self.height - 4)
+                canvas.rectangle(x + 2, 2, ax + between - 4, self.height - 4)
                 canvas.stroke()
-            x += w + between
-        return x - self.padding.left, r
+            x += ax + between
+        return x, r
