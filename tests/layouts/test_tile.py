@@ -1,6 +1,5 @@
 import mock
 import unittest
-from tilenol.layout.examples import Tile2
 from tilenol.xcb import Rectangle
 
 
@@ -13,8 +12,10 @@ class Window(object):
 
 class TestTile(unittest.TestCase):
 
-    def testTile2(self):
-        lay = Tile2()
+    @mock.patch('tilenol.event.Event')
+    def testTile(self, event):
+        from tilenol.layout.examples import Tile
+        lay = Tile()
         lay.set_bounds(Rectangle(0, 0, 800, 600))
         w1 = mock.Mock()
         lay.add(w1)
