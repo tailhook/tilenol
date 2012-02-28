@@ -1,7 +1,11 @@
 from collections import OrderedDict
 from math import floor
+from functools import wraps
+
+from zorro.di import has_dependencies, dependency, di
 
 from tilenol.xcb import Rectangle
+from tilenol.commands import CommandDispatcher
 from . import Layout
 
 
@@ -77,7 +81,42 @@ class Stack(object):
     def full(self):
         return self.limit is not None and len(self.windows) >= self.limit
 
+    def up(self, win):
+        if win not in self.visible_windows:
+            return
+        if self.tile:
+            self.visible_windows.append(self.visible_windows.pop(0))
+        else:
+            self.windows.append(self.windows.pop(0))
+            self.visible_windows = self.windows[0]
 
+    def down(self, win):
+        if win not in self.visible_windows:
+            return
+        if self.tile:
+            self.visible_windows.insert(0, self.visible_windows.pop())
+        else:
+            self.windows.insert(0, self.windows.pop())
+            self.visible_windows = [self.windows[0]]
+
+
+def stackcommand(fun):
+    @wraps(fun)
+    def wrapper(self, *args):
+        try:
+            win = self.commander['window']
+        except KeyError:
+            return
+        print("WiNDOw", win)
+        stack = win.lprops.stack
+        print("STACK", stack)
+        if stack is None:
+            return
+        fun(self, self.stacks[stack], win, *args)
+    return wrapper
+
+
+@has_dependencies
 class Tile(Layout):
     """Tiling layout
 
@@ -88,6 +127,8 @@ class Tile(Layout):
     """
     fixed = False
     vertical = True
+
+    commander = dependency(CommandDispatcher, 'commander')
 
     def __init__(self):
         self.boxes_dirty = False
@@ -150,4 +191,24 @@ class Tile(Layout):
             self.boxes_dirty = False
         for s in self.stack_list:
             s.layout()
+
+    def cmd_up(self):
+        try:
+            win = self.commander['window']
+        except KeyError:
+            return
+        stack = win.lprops.stack
+        if stack is None:
+            return
+        self.stacks[stack].up(win)
+
+    @stackcommand
+    def cmd_up(self, stack, win):
+        stack.up(win)
+        self.layout() # TODO(tailhook) optimize?
+
+    @stackcommand
+    def cmd_down(self, stack, win):
+        stack.down(win)
+        self.layout() # TODO(tailhook) optimize?
 

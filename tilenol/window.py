@@ -37,6 +37,9 @@ class LayoutProperties(object):
     def clear(self):
         self.__dict__.clear()
 
+    def __getattr__(self, name):
+        return None
+
     # TODO(tailhook) expose layout properties to x properties
 
 

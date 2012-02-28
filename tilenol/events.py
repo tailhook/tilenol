@@ -6,6 +6,7 @@ from .keyregistry import KeyRegistry
 from .window import Window, Frame
 from .xcb import Core, Rectangle, XError
 from .groups import GroupManager
+from .commands import CommandDispatcher
 
 
 log = logging.getLogger(__name__)
@@ -17,12 +18,12 @@ class EventDispatcher(object):
     keys = dependency(KeyRegistry, 'key-registry')
     xcore = dependency(Core, 'xcore')
     groupman = dependency(GroupManager, 'group-manager')
+    commander = dependency(CommandDispatcher, 'commander')
 
     def __init__(self):
         self.windows = {}
         self.frames = {}
         self.all_windows = {}
-        self.focused = None
 
     def dispatch(self, ev):
         meth = getattr(self, 'handle_'+ev.__class__.__name__, None)
@@ -61,7 +62,7 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.focus(ev)
-            self.focused = win
+            self.commander['window'] = getattr(win, 'content', win)
 
     def handle_MapNotifyEvent(self, ev):
         try:
@@ -80,6 +81,8 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = False
+            if self.commander['window'] is getattr(win, 'content', win):
+                del self.commander['window']
 
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))

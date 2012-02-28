@@ -1,13 +1,15 @@
-from zorro.di import has_dependencies, dependency
+from zorro.di import has_dependencies, dependency, di
 
 from .screen import ScreenManager
 from .event import Event
+from .commands import CommandDispatcher
 
 
 @has_dependencies
 class GroupManager(object):
 
     screenman = dependency(ScreenManager, 'screen-manager')
+    commander = dependency(CommandDispatcher, 'commander')
 
     group_changed = Event('group-manager.group_changed')
     window_added = Event('group-manager.window_added')
@@ -19,9 +21,13 @@ class GroupManager(object):
 
     def __zorro_di_done__(self):
         # TODO(tailhook) implement several screens
+        for g in self.groups:
+            di(self).inject(g)
         scr = self.screenman.screens[0]
         self.bounds = scr.inner_bounds
         self.current_group.set_bounds(self.bounds)
+        self.commander['group'] = self.current_group
+        self.commander['layout'] = self.current_group.current_layout
         scr.add_listener(self.update_screen)
 
     def update_screen(self, screen):
@@ -40,9 +46,12 @@ class GroupManager(object):
         self.current_group = ngr
         self.current_group.set_bounds(self.bounds)
         ngr.show()
+        self.commander['group'] = self.current_group
+        self.commander['layout'] = self.current_group.current_layout
         self.group_changed.emit()
 
 
+@has_dependencies
 class Group(object):
 
     def __init__(self, name, layout_class):
@@ -51,6 +60,9 @@ class Group(object):
         self.current_layout = layout_class()
         self.floating_windows = []
         self.all_windows = []
+
+    def __zorro_di_done__(self):
+        di(self).inject(self.current_layout)
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.name)

@@ -7,6 +7,9 @@ class CommandDispatcher(object):
     def __init__(self):
         self.objects = {}
 
+    def __getitem__(self, name):
+        return self.objects[name]
+
     def __setitem__(self, name, value):
         self.objects[name] = value
 

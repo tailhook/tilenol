@@ -1,3 +1,5 @@
+from zorro.di import di, has_dependencies, dependency
+
 from collections import OrderedDict
 
 
@@ -8,6 +10,7 @@ class LayoutMeta(type):
         return OrderedDict()
 
 
+@has_dependencies
 class Layout(object):
 
     @classmethod
@@ -20,6 +23,7 @@ class Layout(object):
         return res
 
     def hide_all(self):
+
         for i in getattr(self, 'visible_windows', ()):
             i.hide()
         sub = getattr(self, 'sublayouts', None)
