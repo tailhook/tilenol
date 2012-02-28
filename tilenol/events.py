@@ -18,7 +18,6 @@ class EventDispatcher(object):
     keys = dependency(KeyRegistry, 'key-registry')
     xcore = dependency(Core, 'xcore')
     groupman = dependency(GroupManager, 'group-manager')
-    commander = dependency(CommandDispatcher, 'commander')
 
     def __init__(self):
         self.windows = {}
@@ -52,8 +51,6 @@ class EventDispatcher(object):
             if not hasattr(win, 'group'):
                 self.groupman.add_window(win)
 
-            # TODO(tailhook) find a better place
-
     def handle_EnterNotifyEvent(self, ev):
         try:
             win = self.frames[ev.event]
@@ -61,8 +58,7 @@ class EventDispatcher(object):
             log.warning("Enter notify for non-existent window %x",
                 ev.window)
         else:
-            win.focus(ev)
-            self.commander['window'] = getattr(win, 'content', win)
+            win.focus()
 
     def handle_MapNotifyEvent(self, ev):
         try:
@@ -81,8 +77,28 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = False
-            if self.commander['window'] is getattr(win, 'content', win):
-                del self.commander['window']
+
+    def handle_FocusInEvent(self, ev):
+        try:
+            win = self.all_windows[ev.event]
+        except KeyError:
+            log.warning("Focus request for non-existent window %x",
+                ev.window)
+        else:
+            if ev.mode not in (self.xcore.NotifyMode.Grab,
+                               self.xcore.NotifyMode.Ungrab):
+                win.focus_in()
+
+    def handle_FocusOutEvent(self, ev):
+        try:
+            win = self.all_windows[ev.event]
+        except KeyError:
+            log.warning("Focus request for non-existent window %x",
+                ev.window)
+        else:
+            if ev.mode not in (self.xcore.NotifyMode.Grab,
+                               self.xcore.NotifyMode.Ungrab):
+                win.focus_out()
 
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))

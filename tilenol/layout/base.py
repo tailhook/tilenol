@@ -22,21 +22,21 @@ class Layout(object):
                 res[k] = v
         return res
 
-    def hide_all(self):
-
+    def all_visible_windows(self):
         for i in getattr(self, 'visible_windows', ()):
-            i.hide()
+            yield i
         sub = getattr(self, 'sublayouts', None)
         if sub:
             for s in sub():
                 for i in s.visible_windows:
-                    i.hide()
+                    yield i
+
+
+    def hide_all(self):
+        for i in self.all_visible_windows():
+            i.hide()
+
 
     def show_all(self):
-        for i in getattr(self, 'visible_windows', ()):
+        for i in self.all_visible_windows():
             i.show()
-        sub = getattr(self, 'sublayouts', None)
-        if sub:
-            for s in sub():
-                for i in s.visible_windows:
-                    i.show()

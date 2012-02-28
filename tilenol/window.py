@@ -5,6 +5,7 @@ from zorro.di import di, has_dependencies, dependency
 from .xcb import Core
 from .xcb.core import Rectangle
 from .icccm import SizeHints
+from .commands import CommandDispatcher
 
 
 class SizeRequest(object):
@@ -127,13 +128,13 @@ class Window(object):
             Rectangle(s.x, s.y, s.width, s.height),
             klass=self.xcore.WindowClass.InputOutput,
             params={
-                self.xcore.CW.EventMask:
-                    self.xcore.EventMask.SubstructureRedirect
-                    | self.xcore.EventMask.SubstructureNotify # temp
-                    | self.xcore.EventMask.EnterWindow
-                    | self.xcore.EventMask.LeaveWindow,
                 self.xcore.CW.BackPixel: 0x0000FF,
                 self.xcore.CW.OverrideRedirect: True,
+                self.xcore.CW.EventMask:
+                    self.xcore.EventMask.SubstructureRedirect
+                    | self.xcore.EventMask.EnterWindow
+                    | self.xcore.EventMask.LeaveWindow
+                    | self.xcore.EventMask.FocusChange
             }), self))
         self.xcore.raw.ChangeWindowAttributes(
             window=self,
@@ -146,11 +147,12 @@ class Window(object):
             x=0, y=0)
         return self.frame
 
-    def focus(self, ev):
+    def focus(self):
+        self.done.focus = True
         self.xcore.raw.SetInputFocus(
             focus=self,
             revert_to=self.xcore.InputFocus.Parent,
-            time=ev.time,
+            time=self.xcore.last_event.time,
             )
 
     def set_property(self, name, typ, value):
@@ -176,14 +178,32 @@ class DisplayWindow(Window):
         self.expose_handler(rect)
 
 
+@has_dependencies
 class Frame(Window):
+
+    commander = dependency(CommandDispatcher, 'commander')
 
     def __init__(self, wid, content):
         super().__init__(wid)
         self.content = content
 
-    def focus(self, ev):
-        self.content.focus(ev)
+    def focus(self):
+        self.done.focus = True
+        self.content.focus()
+
+    def focus_out(self):
+        self.done.focus = False
+        self.real.focus = False
+        self.content.done.focus = False
+        self.content.real.focus = False
+        assert self.commander.get('window') in (self.content, None)
+        self.commander.pop('window', None)
+
+    def focus_in(self):
+        self.real.focus = True
+        self.content.real.focus = True
+        assert self.commander.get('window') in (self.content, None)
+        self.commander['window'] = self.content
 
     def configure_content(self, rect):
         hints = self.content.want.hints

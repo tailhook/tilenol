@@ -2,6 +2,7 @@ from functools import partial
 import sys
 import subprocess
 import os.path
+import logging
 
 from zorro.di import DependencyInjector, di, has_dependencies, dependency
 
@@ -15,9 +16,7 @@ from .groups import Group, GroupManager
 from .screen import ScreenManager
 
 
-env_defaults = {
-    'XDG_CONFIG_HOME': os.path.expanduser('~/.config'),
-    }
+log = logging.getLogger(__name__)
 
 
 @has_dependencies
@@ -106,5 +105,8 @@ class Tilenol(object):
             return
 
     def loop(self):
-        for i in self.conn.get_events():
-            self.dispatcher.dispatch(i)
+        for i in self.xcore.get_events():
+            try:
+                self.dispatcher.dispatch(i)
+            except Exception:
+                log.exception("Error handling event %r", i)

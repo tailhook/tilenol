@@ -44,7 +44,7 @@ class Stack(object):
         self.visible_windows.remove(win)
         if not self.visible_windows and self.windows:
             # TODO(tailhook) may be select next window instead of first one
-            self.visible_windows = self.windows[0]
+            self.visible_windows = [self.windows[0]]
 
     def layout(self):
         if self.tile:
@@ -88,7 +88,7 @@ class Stack(object):
             self.visible_windows.append(self.visible_windows.pop(0))
         else:
             self.windows.append(self.windows.pop(0))
-            self.visible_windows = self.windows[0]
+            self.visible_windows = [self.windows[0]]
 
     def down(self, win):
         if win not in self.visible_windows:
@@ -107,9 +107,7 @@ def stackcommand(fun):
             win = self.commander['window']
         except KeyError:
             return
-        print("WiNDOw", win)
         stack = win.lprops.stack
-        print("STACK", stack)
         if stack is None:
             return
         fun(self, self.stacks[stack], win, *args)
@@ -191,16 +189,6 @@ class Tile(Layout):
             self.boxes_dirty = False
         for s in self.stack_list:
             s.layout()
-
-    def cmd_up(self):
-        try:
-            win = self.commander['window']
-        except KeyError:
-            return
-        stack = win.lprops.stack
-        if stack is None:
-            return
-        self.stacks[stack].up(win)
 
     @stackcommand
     def cmd_up(self, stack, win):

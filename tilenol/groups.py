@@ -54,6 +54,8 @@ class GroupManager(object):
 @has_dependencies
 class Group(object):
 
+    commander = dependency(CommandDispatcher, 'commander')
+
     def __init__(self, name, layout_class):
         self.name = name
         self.default_layout = layout_class
@@ -101,3 +103,33 @@ class Group(object):
         self.current_layout.show_all()
         for win in self.floating_windows:
             win.show()
+
+    def cmd_focus_next(self):
+        all = list(self.current_layout.all_visible_windows())
+        all.extend(self.floating_windows)
+        try:
+            win = self.commander['window']
+        except KeyError:
+            nwin = all[0]
+        else:
+            idx = all.index(win)
+            if idx + 1 >= len(all):
+                nwin = all[0]
+            else:
+                nwin = all[idx+1]
+        nwin.focus()
+
+    def cmd_focus_prev(self):
+        all = list(self.current_layout.all_visible_windows())
+        all.extend(self.floating_windows)
+        try:
+            win = self.commander['window']
+        except KeyError:
+            nwin = all[-1]
+        else:
+            idx = all.index(win)
+            if idx > 0:
+                nwin = all[idx - 1]
+            else:
+                nwin = all[-1]
+        nwin.focus()

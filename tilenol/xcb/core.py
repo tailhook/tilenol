@@ -101,6 +101,9 @@ class Core(object):
         pad = self._conn.init_data['bitmap_format_scanline_pad']
         assert pad % 8 == 0
         self.bitmap_stride = pad//8
+        self.current_event = None
+        self.last_event = None
+        self._event_iterator = self._events()
 
     def init_keymap(self):
         self.keycode_to_keysym = {}
@@ -152,5 +155,18 @@ class Core(object):
             len(result['value']) // fmtlen[result['format']],
             fmtchar[result['format']]),
             result['value'])
+
+    def _events(self):
+        for i in self._conn.get_events():
+            try:
+                self.current_event = i
+                self.last_event = i
+                yield i
+            finally:
+                self.current_event = None
+
+    def get_events(self):
+        return self._event_iterator
+
 
 
