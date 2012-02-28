@@ -132,6 +132,7 @@ class Window(object):
                 self.xcore.CW.OverrideRedirect: True,
                 self.xcore.CW.EventMask:
                     self.xcore.EventMask.SubstructureRedirect
+                    | self.xcore.EventMask.SubstructureNotify
                     | self.xcore.EventMask.EnterWindow
                     | self.xcore.EventMask.LeaveWindow
                     | self.xcore.EventMask.FocusChange
@@ -151,7 +152,7 @@ class Window(object):
         self.done.focus = True
         self.xcore.raw.SetInputFocus(
             focus=self,
-            revert_to=self.xcore.InputFocus.Parent,
+            revert_to=self.xcore.InputFocus.PointerRoot,
             time=self.xcore.last_event.time,
             )
 
@@ -204,6 +205,10 @@ class Frame(Window):
         self.content.real.focus = True
         assert self.commander.get('window') in (self.content, None)
         self.commander['window'] = self.content
+
+    def destroyed(self):
+        if self.commander.get('window') is self.content:
+            del self.commander['window']
 
     def configure_content(self, rect):
         hints = self.content.want.hints

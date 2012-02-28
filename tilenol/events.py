@@ -77,6 +77,8 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = False
+            if win.frame:
+                win.frame.hide()
 
     def handle_FocusInEvent(self, ev):
         try:
@@ -114,6 +116,12 @@ class EventDispatcher(object):
             frm = win.reparent()
             self.frames[frm.wid] = frm
             self.all_windows[frm.wid] = frm
+
+    def handle_ConfigureNotifyEvent(self, ev):
+        pass
+
+    def handle_ReparentNotifyEvent(self, ev):
+        pass
 
     def handle_DestroyNotifyEvent(self, ev):
         try:

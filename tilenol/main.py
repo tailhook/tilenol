@@ -58,14 +58,14 @@ class Tilenol(object):
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
 
-        from .layout.examples import Tile2, Max, InstantMsg
+        from .layout.examples import Tile, Max, InstantMsg
         gman = inj.inject(GroupManager(map(inj.inject, (
-                Group('1', Tile2),
+                Group('1', Tile),
                 Group('2', Max),
-                Group('3', Tile2),
-                Group('4', Tile2),
-                Group('5', Tile2),
-                Group('g', Tile2),
+                Group('3', Tile),
+                Group('4', Tile),
+                Group('5', Tile),
+                Group('g', Tile),
                 Group('i', InstantMsg),
                 Group('m', Max),
             ))))

@@ -17,7 +17,6 @@ class Bar(object):
     screenman = dependency(ScreenManager, 'screen-manager')
     dispatcher = dependency(EventDispatcher, 'event-dispatcher')
 
-    redraw = Event('bar.redraw')
 
     def __init__(self, widgets,
                  screen_no=0,
@@ -30,6 +29,7 @@ class Bar(object):
         self.background = background
         for w in widgets:
             w.height = self.height
+        self.redraw = Event('bar.redraw')
         self.redraw.listen(self.expose)
 
     def __zorro_di_done__(self):

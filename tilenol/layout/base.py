@@ -1,6 +1,8 @@
+from collections import OrderedDict
+
 from zorro.di import di, has_dependencies, dependency
 
-from collections import OrderedDict
+from tilenol.event import Event
 
 
 class LayoutMeta(type):
@@ -13,6 +15,10 @@ class LayoutMeta(type):
 @has_dependencies
 class Layout(object):
 
+    def __init__(self):
+        self.relayout = Event('layout.relayout')
+        self.relayout.listen(self.layout)
+
     @classmethod
     def get_defined_classes(cls, base):
         res = OrderedDict()
@@ -21,6 +27,9 @@ class Layout(object):
             if isinstance(v, type) and issubclass(v, base):
                 res[k] = v
         return res
+
+    def dirty(self):
+        self.relayout.emit()
 
     def all_visible_windows(self):
         for i in getattr(self, 'visible_windows', ()):

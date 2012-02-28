@@ -9,69 +9,24 @@ from tilenol.commands import CommandDispatcher
 from . import Layout
 
 
-class Stack(object):
+class BaseStack(object):
     """Single stack for tile layout
 
     It's customized by subclassing, not by instantiating
 
     :var weight: the bigger weight is, the bigger part of screen this stack
         occupies
-    :var tile: whether to tile windows or just switch between them
     :var limit: limit number of windows inside the stack
     :var priority: windows are placed into stacks with smaller priority first
     """
     weight = 1
-    tile = True
     limit = None
     priority = 100
-    vertical = True
 
-    def __init__(self):
-        self.visible_windows = []  # layout focus API
+    def __init__(self, parent):
+        self.parent = parent
         self.windows = []
-        self.box = Rectangle(0, 0, 100, 100)  # just to have something
-
-    def add(self, win):
-        self.windows.append(win)
-        if self.tile:
-            self.visible_windows.append(win)
-        else:
-            # TODO(tailhook) check if we should leave top (focused) window
-            self.visible_windows = [win]
-
-    def remove(self, win):
-        self.windows.remove(win)
-        self.visible_windows.remove(win)
-        if not self.visible_windows and self.windows:
-            # TODO(tailhook) may be select next window instead of first one
-            self.visible_windows = [self.windows[0]]
-
-    def layout(self):
-        if self.tile:
-            vc = len(self.visible_windows)
-            if self.vertical:
-                rstart = start = self.box.y
-            else:
-                rstart = start = self.box.x
-            for n, w in enumerate(self.visible_windows, 1):
-                if self.vertical:
-                    end = rstart + int(floor(n/vc*self.box.height))
-                    w.set_bounds(Rectangle(
-                        self.box.x, start, self.box.width, end-start))
-                else:
-                    end = rstart + int(floor(n/vc*self.box.width))
-                    w.set_bounds(Rectangle(
-                        start, self.box.y, end-start, self.box.height))
-                w.show()
-                start = end
-        elif self.visible_windows:
-            win = self.visible_windows[0]
-            win.set_bounds(self.box)
-            win.show()
-            for i in self.windows:
-                if i is not win:
-                    i.hide()
-
+        self.box = Rectangle(0, 0, 100, 100)
 
     @property
     def empty(self):
@@ -81,23 +36,79 @@ class Stack(object):
     def full(self):
         return self.limit is not None and len(self.windows) >= self.limit
 
-    def up(self, win):
-        if win not in self.visible_windows:
-            return
-        if self.tile:
-            self.visible_windows.append(self.visible_windows.pop(0))
-        else:
-            self.windows.append(self.windows.pop(0))
-            self.visible_windows = [self.windows[0]]
+    def up(self):
+        self.windows.append(self.windows.pop(0))
+        print(self.windows)
+        self.parent.dirty()
 
-    def down(self, win):
-        if win not in self.visible_windows:
+    def down(self):
+        self.windows.insert(0, self.windows.pop())
+        print(self.windows)
+        self.parent.dirty()
+
+
+class Stack(BaseStack):
+    """Single window visibility stack"""
+
+
+    @property
+    def visible_windows(self):
+        for i in self.windows:
+            yield i
+            break
+
+    def add(self, win):
+        self.windows.insert(0, win)
+        self.parent.dirty()
+
+    def remove(self, win):
+        if self.windows[0] is win:
+            self.parent.dirty()
+        self.windows.remove(win)
+
+    def layout(self):
+        if not self.windows:
             return
-        if self.tile:
-            self.visible_windows.insert(0, self.visible_windows.pop())
+        win = self.windows[0]
+        win.set_bounds(self.box)
+        win.show()
+        for i in self.windows[1:]:
+            i.hide()
+
+
+class TileStack(BaseStack):
+    """Tiling stack"""
+    vertical = True
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.visible_windows = self.windows
+
+    def add(self, win):
+        self.windows.append(win)
+        self.parent.dirty()
+
+    def remove(self, win):
+        self.windows.remove(win)
+        self.parent.dirty()
+
+    def layout(self):
+        vc = len(self.windows)
+        if self.vertical:
+            rstart = start = self.box.y
         else:
-            self.windows.insert(0, self.windows.pop())
-            self.visible_windows = [self.windows[0]]
+            rstart = start = self.box.x
+        for n, w in enumerate(self.windows, 1):
+            if self.vertical:
+                end = rstart + int(floor(n/vc*self.box.height))
+                w.set_bounds(Rectangle(
+                    self.box.x, start, self.box.width, end-start))
+            else:
+                end = rstart + int(floor(n/vc*self.box.width))
+                w.set_bounds(Rectangle(
+                    start, self.box.y, end-start, self.box.height))
+            w.show()
+            start = end
 
 
 def stackcommand(fun):
@@ -110,13 +121,13 @@ def stackcommand(fun):
         stack = win.lprops.stack
         if stack is None:
             return
-        fun(self, self.stacks[stack], win, *args)
+        return fun(self, self.stacks[stack], win, *args)
     return wrapper
 
 
 @has_dependencies
-class Tile(Layout):
-    """Tiling layout
+class Split(Layout):
+    """Split layout
 
     It's customized by subclassing, not by instantiating. Class definition
     should consist of at least one stack
@@ -129,10 +140,11 @@ class Tile(Layout):
     commander = dependency(CommandDispatcher, 'commander')
 
     def __init__(self):
+        super().__init__()
         self.boxes_dirty = False
         stacks = []
-        for stack_class in self.get_defined_classes(Stack).values():
-            stack = stack_class()
+        for stack_class in self.get_defined_classes(BaseStack).values():
+            stack = stack_class(self)
             stacks.append(stack)
         self.stack_list = stacks[:]
         stacks.sort(key=lambda s: s.priority)
@@ -141,7 +153,6 @@ class Tile(Layout):
     def set_bounds(self, bounds):
         self.bounds = bounds
         self.boxes_dirty = True
-        self.dirty = True
 
     def _assign_boxes(self, box):
         if self.fixed:
@@ -172,7 +183,6 @@ class Tile(Layout):
                     self.boxes_dirty = True
                 s.add(win)
                 win.lprops.stack = s.__class__.__name__
-                self.dirty = True
                 return True
         return False  # no empty stacks, reject it, so it will be floating
 
@@ -192,11 +202,9 @@ class Tile(Layout):
 
     @stackcommand
     def cmd_up(self, stack, win):
-        stack.up(win)
-        self.layout() # TODO(tailhook) optimize?
+        stack.up()
 
     @stackcommand
     def cmd_down(self, stack, win):
-        stack.down(win)
-        self.layout() # TODO(tailhook) optimize?
+        stack.down()
 

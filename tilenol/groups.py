@@ -11,13 +11,13 @@ class GroupManager(object):
     screenman = dependency(ScreenManager, 'screen-manager')
     commander = dependency(CommandDispatcher, 'commander')
 
-    group_changed = Event('group-manager.group_changed')
-    window_added = Event('group-manager.window_added')
-
     def __init__(self, groups):
         self.groups = list(groups)
         self.current_group = self.groups[0]
         self.by_name = {g.name: g for g in self.groups}
+        self.group_changed = Event('group-manager.group_changed')
+        self.window_added = Event('group-manager.window_added')
+
 
     def __zorro_di_done__(self):
         # TODO(tailhook) implement several screens
@@ -77,18 +77,12 @@ class Group(object):
         self.current_layout.add(win)
         win.group = self
         self.all_windows.append(win)
-        # TODO(tailhook) may be optimize dirty flag?
-        if self.current_layout.dirty:
-            self.current_layout.layout()
 
     def remove_window(self, win):
         assert win.group == self
         self.current_layout.remove(win)
         self.all_windows.remove(win)
         del win.group
-        # TODO(tailhook) may be optimize dirty flag?
-        if self.current_layout.dirty:
-            self.current_layout.layout()
 
     def hide(self):
         self.current_layout.hide_all()

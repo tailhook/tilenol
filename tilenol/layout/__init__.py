@@ -1,2 +1,2 @@
 from .base import Layout
-from .tile import Tile, Stack
+from .tile import Split, Stack, TileStack

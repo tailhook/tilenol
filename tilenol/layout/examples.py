@@ -1,26 +1,25 @@
-from .tile import Tile, Stack
+from .tile import Split, Stack, TileStack
 
-class Tile2(Tile):
+class Tile(Split):
 
     class left(Stack):
         weight = 3
         priority = 0
         limit = 1
 
-    class right(Stack):
+    class right(TileStack):
         pass
 
 
-class Max(Tile):
+class Max(Split):
 
     class main(Stack):
         tile = False
 
 
-class InstantMsg(Tile):
+class InstantMsg(Split):
 
-    class left(Stack):
-        tile = True  # or maybe false?
+    class left(TileStack): # or maybe not tiled ?
         weight = 3
 
     class right(Stack):
