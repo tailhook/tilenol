@@ -36,11 +36,11 @@ class BaseStack(object):
     def full(self):
         return self.limit is not None and len(self.windows) >= self.limit
 
-    def up(self):
+    def shift_up(self):
         self.windows.append(self.windows.pop(0))
         self.parent.dirty()
 
-    def down(self):
+    def shift_down(self):
         self.windows.insert(0, self.windows.pop())
         self.parent.dirty()
 
@@ -56,12 +56,14 @@ class Stack(BaseStack):
             break
 
     def add(self, win):
+        win.lprops.stack = self.__class__.__name__
         self.windows.insert(0, win)
         self.parent.dirty()
 
     def remove(self, win):
         if self.windows[0] is win:
             self.parent.dirty()
+        del win.lprops.stack
         self.windows.remove(win)
 
     def layout(self):
@@ -83,10 +85,12 @@ class TileStack(BaseStack):
         self.visible_windows = self.windows
 
     def add(self, win):
+        win.lprops.stack = self.__class__.__name__
         self.windows.append(win)
         self.parent.dirty()
 
     def remove(self, win):
+        del win.lprops.stack
         self.windows.remove(win)
         self.parent.dirty()
 
@@ -139,7 +143,6 @@ class Split(Layout):
 
     def __init__(self):
         super().__init__()
-        self.boxes_dirty = False
         stacks = []
         for stack_class in self.get_defined_classes(BaseStack).values():
             stack = stack_class(self)
@@ -150,7 +153,7 @@ class Split(Layout):
 
     def set_bounds(self, bounds):
         self.bounds = bounds
-        self.boxes_dirty = True
+        self.dirty()
 
     def _assign_boxes(self, box):
         if self.fixed:
@@ -177,32 +180,65 @@ class Split(Layout):
     def add(self, win):  # layout API
         for s in self.stacks.values():
             if not s.full:
-                if not self.fixed and s.empty:
-                    self.boxes_dirty = True
                 s.add(win)
-                win.lprops.stack = s.__class__.__name__
                 return True
         return False  # no empty stacks, reject it, so it will be floating
 
     def remove(self, win):  # layout API
         self.stacks[win.lprops.stack].remove(win)
-        win.lprops.clear()
 
     def sublayouts(self):  # layout focus API
         return self.stacks.values()
 
     def layout(self):
-        if self.boxes_dirty:
-            self._assign_boxes(self.bounds)
-            self.boxes_dirty = False
+        self._assign_boxes(self.bounds)
         for s in self.stack_list:
             s.layout()
 
+    def swap_window(self, source, target, win):
+        if target.full:
+            other = target.windows[0]
+            target.remove(other)
+            source.remove(win)
+            target.add(win)
+            source.add(other)
+        else:
+            source.remove(win)
+            target.add(win)
+
     @stackcommand
     def cmd_up(self, stack, win):
-        stack.up()
+        if self.vertical:
+            stack.shift_up()
+        else:
+            idx = self.stack_list.index(stack)
+            if idx > 0:
+                self.swap_window(stack, self.stack_list[idx-1], win)
 
     @stackcommand
     def cmd_down(self, stack, win):
-        stack.down()
+        if self.vertical:
+            stack.shift_down()
+        else:
+            idx = self.stack_list.index(stack)
+            if idx < len(self.stacks)-1:
+                self.swap_window(stack, self.stack_list[idx+1], win)
+
+    @stackcommand
+    def cmd_left(self, stack, win):
+        if not self.vertical:
+            stack.shift_up()
+        else:
+            idx = self.stack_list.index(stack)
+            if idx > 0:
+                self.swap_window(stack, self.stack_list[idx-1], win)
+
+    @stackcommand
+    def cmd_right(self, stack, win):
+        if not self.vertical:
+            stack.shift_down()
+        else:
+            idx = self.stack_list.index(stack)
+            if idx < len(self.stacks)-1:
+                self.swap_window(stack, self.stack_list[idx+1], win)
 
