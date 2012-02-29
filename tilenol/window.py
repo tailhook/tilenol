@@ -1,11 +1,12 @@
 from collections import namedtuple
+import struct
 
 from zorro.di import di, has_dependencies, dependency
 
-from .xcb import Core
-from .xcb.core import Rectangle
+from .xcb import Core, Rectangle, XError
 from .icccm import SizeHints
 from .commands import CommandDispatcher
+from .ewmh import Ewmh
 
 
 class SizeRequest(object):
@@ -48,6 +49,7 @@ class LayoutProperties(object):
 class Window(object):
 
     xcore = dependency(Core, 'xcore')
+    ewmh = dependency(Ewmh, 'ewmh')
 
     def __init__(self, wid):
         self.wid = wid
@@ -80,6 +82,33 @@ class Window(object):
             sr.width = req.width
         if req.value_mask & msk.Height:
             sr.height = req.height
+        sz = self.done.size
+        if sz is None:
+            sz = sr
+        self.send_event('ConfigureNotify',
+            window=self,
+            event=self,
+            x=sz.x,
+            y=sz.y,
+            width=sz.width,
+            height=sz.height,
+            border_width=0,
+            above_sibling=0,
+            override_redirect=False,
+            )
+
+    def send_event(self, event_type, **kw):
+        etype = self.xcore.proto.events[event_type]
+        buf = bytearray([etype.number])
+        etype.write_to(buf, kw)
+        buf[2:2] = b'\x00\x00'
+        buf += b'\x00'*(32 - len(buf))
+        self.xcore.raw.SendEvent(
+            propagate=False,
+            destination=self,
+            event_mask=0,
+            event=buf,
+            )
 
     def __index__(self):
         return self.wid
@@ -90,6 +119,7 @@ class Window(object):
         self.done.visible = True
         self.xcore.raw.MapWindow(window=self)
         if self.frame:
+            self.ewmh.showing_window(self)
             self.frame.show()
         return True
 
@@ -98,6 +128,7 @@ class Window(object):
             return False
         self.done.visible = False
         if self.frame:
+            self.ewmh.hiding_window(self)
             self.frame.hide()
         else:
             self.xcore.raw.UnmapWindow(window=self)
@@ -106,10 +137,10 @@ class Window(object):
     def set_bounds(self, rect):
         if self.done.size == rect:
             return False
-        self.done.size = rect
         if self.frame:
             self.frame.set_bounds(rect)
         else:
+            self.done.size = rect
             self.xcore.raw.ConfigureWindow(window=self, params={
                 self.xcore.ConfigWindow.X: rect.x,
                 self.xcore.ConfigWindow.Y: rect.y,
@@ -146,7 +177,16 @@ class Window(object):
             window=self,
             parent=self.frame,
             x=0, y=0)
+        for name in self.xcore.raw.ListProperties(window=self)['atoms']:
+            self.update_property(name)
         return self.frame
+
+    def update_property(self, atom):
+        try:
+            self.set_property(self.xcore.atom[atom].name,
+                  *self.xcore.get_property(self, atom))
+        except XError:
+            log.exception("Error getting property for window %x", self)
 
     def focus(self):
         self.done.focus = True
@@ -167,6 +207,21 @@ class Window(object):
 
     def destroy(self):
         self.xcore.raw.DestroyWindow(window=self)
+
+    def cmd_close(self):
+        delw = self.xcore.atom.WM_DELETE_WINDOW
+        if delw in self.props.get('WM_PROTOCOLS', ()):
+            self.send_event('ClientMessage',
+                window=self,
+                type=self.xcore.atom.WM_PROTOCOLS,
+                format=32,
+                data=struct.pack('<LL', delw, 0),
+                )
+        else:
+            log.warning("Can't close window gracefully, you can kill it")
+
+    def cmd_kill(self):
+        self.xcore.raw.KillClient(resource=self)
 
 
 class DisplayWindow(Window):
@@ -224,6 +279,7 @@ class Frame(Window):
         else:
             width = rect.width
             height = rect.height
+        self.content.done.size = Rectangle(x, y, width, height)
         self.xcore.raw.ConfigureWindow(window=self.content, params={
             self.xcore.ConfigWindow.X: x,
             self.xcore.ConfigWindow.Y: y,

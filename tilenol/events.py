@@ -3,7 +3,7 @@ import logging
 from zorro.di import di, has_dependencies, dependency
 
 from .keyregistry import KeyRegistry
-from .window import Window, Frame
+from .window import Window
 from .xcb import Core, Rectangle, XError
 from .groups import GroupManager
 from .commands import CommandDispatcher
@@ -55,10 +55,12 @@ class EventDispatcher(object):
         try:
             win = self.frames[ev.event]
         except KeyError:
-            log.warning("Enter notify for non-existent window %x",
-                ev.window)
+            log.warning("Enter notify for non-existent window %x", ev.event)
         else:
             win.focus()
+
+    def handle_LeaveNotifyEvent(self, ev):
+        pass  # nothing to do at the moment
 
     def handle_MapNotifyEvent(self, ev):
         try:
@@ -78,6 +80,7 @@ class EventDispatcher(object):
         else:
             win.real.visible = False
             if win.frame:
+                win.ewmh.hiding_window(win)
                 win.frame.hide()
 
     def handle_FocusInEvent(self, ev):
@@ -87,8 +90,9 @@ class EventDispatcher(object):
             log.warning("Focus request for non-existent window %x",
                 ev.window)
         else:
-            if ev.mode not in (self.xcore.NotifyMode.Grab,
-                               self.xcore.NotifyMode.Ungrab):
+            if(ev.mode not in (self.xcore.NotifyMode.Grab,
+                               self.xcore.NotifyMode.Ungrab)
+               and ev.detail != self.xcore.NotifyDetail.Pointer):
                 win.focus_in()
 
     def handle_FocusOutEvent(self, ev):
@@ -98,8 +102,9 @@ class EventDispatcher(object):
             log.warning("Focus request for non-existent window %x",
                 ev.window)
         else:
-            if ev.mode not in (self.xcore.NotifyMode.Grab,
-                               self.xcore.NotifyMode.Ungrab):
+            if(ev.mode not in (self.xcore.NotifyMode.Grab,
+                               self.xcore.NotifyMode.Ungrab)
+               and ev.detail != self.xcore.NotifyDetail.Pointer):
                 win.focus_out()
 
     def handle_CreateNotifyEvent(self, ev):
@@ -125,11 +130,13 @@ class EventDispatcher(object):
 
     def handle_DestroyNotifyEvent(self, ev):
         try:
-            win = self.all_windows[ev.window]
+            win = self.all_windows.pop(ev.window)
         except KeyError:
             log.warning("Destroy notify for non-existent window %x",
                 ev.window)
         else:
+            self.windows.pop(ev.window, None)
+            self.frames.pop(ev.window, None)
             if hasattr(win, 'group'):
                 win.group.remove_window(win)
             win.destroyed()
@@ -150,12 +157,7 @@ class EventDispatcher(object):
             log.warning("Property notify event for non-existent window %x",
                 ev.window)
         else:
-            try:
-                win.set_property(self.xcore.atom[ev.atom].name,
-                      *self.xcore.get_property(ev.window, ev.atom))
-            except XError:
-                log.exception("Error getting property for window %x",
-                    ev.window)
+            win.update_property(ev.atom)
 
     def handle_ExposeEvent(self, ev):
         try:
@@ -165,5 +167,10 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.expose(Rectangle(ev.x, ev.y, ev.width, ev.height))
+
+    def handle_ClientMessageEvent(self, ev):
+        type = self.xcore.atom[ev.type]
+        import struct
+        print("ClientMessage", ev, repr(type), struct.unpack('<5L', ev.data))
 
 

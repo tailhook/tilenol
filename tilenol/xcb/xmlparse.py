@@ -137,11 +137,17 @@ class Error(Struct):
 
 
 class Union(Basic):
+    """Union is only used for ClientMessage"""
 
     def __init__(self, name, choices):
         self.name = name
         self.choices = choices
 
+    def write_to(self, buf, value):
+        buf += value
+
+    def read_from(self, buf, pos):
+        return buf[pos:], len(buf)
 
 class List(object):
 
@@ -251,7 +257,8 @@ class Proto(object):
             if field.tag == 'field':
                 items[field.attrib['name']] = self.types[field.attrib['type']]
             elif field.tag == 'pad':
-                items[len(items)] = Simple(len(items), '{}x'.format(field.attrib['bytes']))
+                items[len(items)] = Simple(len(items),
+                    '{}x'.format(field.attrib['bytes']))
             elif field.tag == 'list':
                 if field.find('*') is not None:
                     expr = self._parse_expr(field.find('*'))

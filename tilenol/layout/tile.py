@@ -38,12 +38,10 @@ class BaseStack(object):
 
     def up(self):
         self.windows.append(self.windows.pop(0))
-        print(self.windows)
         self.parent.dirty()
 
     def down(self):
         self.windows.insert(0, self.windows.pop())
-        print(self.windows)
         self.parent.dirty()
 
 

@@ -8,8 +8,9 @@ from zorro.di import DependencyInjector, di, has_dependencies, dependency
 
 from .xcb import Connection, Proto, Core, Keysyms, Rectangle
 from .keyregistry import KeyRegistry
-from .events import EventDispatcher
+from .ewmh import Ewmh
 from .window import Window
+from .events import EventDispatcher
 from .commands import CommandDispatcher, EnvCommands
 from .config import Config
 from .groups import Group, GroupManager
@@ -72,6 +73,8 @@ class Tilenol(object):
         cmd['groups'] = gman
         inj['group-manager'] = gman
         inj['event-dispatcher'] = inj.inject(EventDispatcher())
+        inj['ewmh'] = Ewmh()
+        inj.inject(inj['ewmh'])
 
         inj.inject(self)
 

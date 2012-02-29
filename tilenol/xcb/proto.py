@@ -276,7 +276,7 @@ class Connection(object):
         conn = self.connection()
         for i in list(kw):
             n = i + '_len'
-            if n in rtype.items:
+            if n in rtype.items and n not in kw:
                 kw[n] = len(kw[i])
         buf = bytearray()
         rtype.write_to(buf, kw)

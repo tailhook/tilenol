@@ -50,7 +50,7 @@ class AtomWrapper(object):
     def __getattr__(self, name):
         assert name.isidentifier()
         props = self._conn.do_request(self.proto.requests['InternAtom'],
-            only_if_exists=True,
+            only_if_exists=False,
             name=name,
             )
         atom = Atom(props['atom'], name)
@@ -125,9 +125,9 @@ class Core(object):
         self.raw.CreateWindow(**{
             'wid': wid,
             'root': root['root'],
-            'depth': root['root_depth'],
+            'depth': 0,
             'parent': root['root'],
-            'visual': root['root_visual'],
+            'visual': 0,
             'x': bounds.x,
             'y': bounds.y,
             'width': bounds.width,
