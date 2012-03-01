@@ -22,10 +22,15 @@ class Classifier(object):
             'TOOLBAR',
             'SPLASH',
             ), set_property('floating', True))
-        self.add_rule(ewmh.match_type(
-            'UTILITY',
-            ), set_property('floating', False),
-            klass='Gimp')
+        self.add_rule(ewmh.match_type('UTILITY'),
+                      set_property('floating', False),
+                      klass='Gimp')
+        self.add_rule(match_role('gimp-toolbox'),
+                      set_lprop('stack', 'left'),
+                      klass='Gimp')
+        self.add_rule(match_role('gimp-dock'),
+                      set_lprop('stack', 'right'),
+                      klass='Gimp')
 
     def apply(self, win):
         for condition, action in self.global_rules:
@@ -48,8 +53,21 @@ class Classifier(object):
                 yield name
 
 
+def match_role(*roles):
+    def checker(win):
+        for typ in roles:
+            if typ == win.props.get('WM_WINDOW_ROLE'):
+                return True
+    return checker
+
 def set_property(name, value):
     def setter(win):
         setattr(win, name, value)
+    return setter
+
+
+def set_lprop(name, value):
+    def setter(win):
+        setattr(win.lprops, name, value)
     return setter
 

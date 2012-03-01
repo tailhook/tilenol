@@ -15,6 +15,7 @@ from .commands import CommandDispatcher, EnvCommands
 from .config import Config
 from .groups import Group, GroupManager
 from .screen import ScreenManager
+from .classify import Classifier
 
 
 log = logging.getLogger(__name__)
@@ -59,19 +60,21 @@ class Tilenol(object):
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
 
-        from .layout.examples import Tile, Max, InstantMsg
+        from .layout.examples import Tile, Max, InstantMsg, Gimp
         gman = inj.inject(GroupManager(map(inj.inject, (
                 Group('1', Tile),
                 Group('2', Max),
                 Group('3', Tile),
                 Group('4', Tile),
                 Group('5', Tile),
-                Group('g', Tile),
+                Group('g', Gimp),
                 Group('i', InstantMsg),
                 Group('m', Max),
             ))))
         cmd['groups'] = gman
         inj['group-manager'] = gman
+        inj['classifier'] = inj.inject(Classifier())
+        inj['classifier'].default_rules()
         inj['event-dispatcher'] = inj.inject(EventDispatcher())
         inj['ewmh'] = Ewmh()
         inj.inject(inj['ewmh'])

@@ -80,9 +80,9 @@ class TileStack(BaseStack):
     """Tiling stack"""
     vertical = True
 
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.visible_windows = self.windows
+    @property
+    def visible_windows(self):
+        return self.windows
 
     def add(self, win):
         win.lprops.stack = self.__class__.__name__
@@ -178,6 +178,11 @@ class Split(Layout):
             start = end
 
     def add(self, win):  # layout API
+        if win.lprops.stack is not None:
+            s = self.stacks[win.lprops.stack]
+            if not s.full:
+                s.add(win)
+                return True
         for s in self.stacks.values():
             if not s.full:
                 s.add(win)

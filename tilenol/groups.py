@@ -74,13 +74,20 @@ class Group(object):
         return not self.all_windows
 
     def add_window(self, win):
-        self.current_layout.add(win)
+        if win.floating:
+            self.floating_windows.append(win)
+            win.show()
+        else:
+            self.current_layout.add(win)
         win.group = self
         self.all_windows.append(win)
 
     def remove_window(self, win):
         assert win.group == self
-        self.current_layout.remove(win)
+        if win in self.floating_windows:
+            self.floating_windows.remove(win)
+        else:
+            self.current_layout.remove(win)
         self.all_windows.remove(win)
         del win.group
 
@@ -91,11 +98,13 @@ class Group(object):
 
     def set_bounds(self, rect):
         self.current_layout.set_bounds(rect)
-        # TODO(tailhook) constrain floating windows
+        #for win in self.floating_windows:
+        #    win.set_screen(rect)
 
     def show(self):
         self.current_layout.show_all()
         for win in self.floating_windows:
+            #win.set_screen(self.bounds)
             win.show()
 
     def cmd_focus_next(self):

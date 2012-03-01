@@ -51,6 +51,8 @@ class Window(object):
     xcore = dependency(Core, 'xcore')
     ewmh = dependency(Ewmh, 'ewmh')
 
+    floating = None
+
     def __init__(self, wid):
         self.wid = wid
         self.frame = None

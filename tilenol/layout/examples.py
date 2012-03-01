@@ -27,3 +27,17 @@ class InstantMsg(Split):
         priority = 0  # probably roster created first
         # TODO(tailhook) implement window role matching
 
+
+class Gimp(Split):
+
+    class left(Stack):
+        limit = 1
+        weight = 1
+
+    class center(Stack):
+        weight = 4
+        priority = 0
+
+    class right(Stack):
+        limit = 1
+        weight = 2

@@ -11,9 +11,12 @@ class LayoutMeta(type):
     def __prepare__(cls, name, bases):
         return OrderedDict()
 
+    def __init__(cls, name, bases, dic):
+        cls.fields = list(dic.keys())
+
 
 @has_dependencies
-class Layout(object):
+class Layout(metaclass=LayoutMeta):
 
     def __init__(self):
         self.relayout = Event('layout.relayout')
@@ -22,7 +25,7 @@ class Layout(object):
     @classmethod
     def get_defined_classes(cls, base):
         res = OrderedDict()
-        for k in dir(cls):
+        for k in cls.fields:
             v = getattr(cls, k)
             if isinstance(v, type) and issubclass(v, base):
                 res[k] = v
@@ -40,11 +43,9 @@ class Layout(object):
                 for i in s.visible_windows:
                     yield i
 
-
     def hide_all(self):
         for i in self.all_visible_windows():
             i.hide()
-
 
     def show_all(self):
         for i in self.all_visible_windows():

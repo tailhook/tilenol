@@ -7,6 +7,7 @@ from .window import Window
 from .xcb import Core, Rectangle, XError
 from .groups import GroupManager
 from .commands import CommandDispatcher
+from .classify import Classifier
 
 
 log = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class EventDispatcher(object):
     keys = dependency(KeyRegistry, 'key-registry')
     xcore = dependency(Core, 'xcore')
     groupman = dependency(GroupManager, 'group-manager')
+    classifier = dependency(Classifier, 'classifier')
 
     def __init__(self):
         self.windows = {}
@@ -49,6 +51,7 @@ class EventDispatcher(object):
         else:
             win.want.visible = True
             if not hasattr(win, 'group'):
+                self.classifier.apply(win)
                 self.groupman.add_window(win)
 
     def handle_EnterNotifyEvent(self, ev):
