@@ -61,4 +61,15 @@ class Ewmh(object):
             data=struct.pack('<LL', 0, 0))
 
 
+def match_type(*types):
+    types = tuple('_NET_WM_WINDOW_TYPE_' + typ.upper() for typ in types)
+    assert all(typ.isidentifier() for typ in types)
+    def checker(win):
+        for typ in types:
+            rtype = getattr(win.xcore.atom, typ)
+            if rtype in win.props.get('_NET_WM_WINDOW_TYPE', ()):
+                return True
+    return checker
+
+
 from .window import Window # cyclic dependency
