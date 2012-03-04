@@ -1,4 +1,5 @@
 from . import ewmh
+from . import icccm
 
 
 class Classifier(object):
@@ -31,6 +32,12 @@ class Classifier(object):
         self.add_rule(match_role('gimp-dock'),
                       set_lprop('stack', 'right'),
                       klass='Gimp')
+        self.add_rule(lambda w: True,
+                      set_property('floating', True),
+                      klass='VCLSalFrame')
+        self.add_rule(lambda w: True,
+                      set_property('floating', False),
+                      klass='VCLSalFrame.DocumentWindow')
 
     def apply(self, win):
         for condition, action in self.global_rules:
