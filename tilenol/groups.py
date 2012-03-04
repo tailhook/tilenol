@@ -36,7 +36,13 @@ class GroupManager(object):
         self.current_group.set_bounds(self.bounds)
 
     def add_window(self, win):
-        self.current_group.add_window(win)
+        if(isinstance(win.lprops.group, int)
+           and win.lprops.group < len(self.groups)):
+            ngr = self.groups[win.lprops.group]
+        else:
+            ngr = self.current_group
+        ngr.add_window(win)
+        win.lprops.group = self.groups.index(ngr)
         self.window_added.emit()
 
     def cmd_switch(self, name):
@@ -61,6 +67,7 @@ class GroupManager(object):
         self.current_group.remove_window(win)
         win.hide()
         ngr.add_window(win)
+        win.lprops.group = self.groups.index(ngr)
         self.window_added.emit()
 
 

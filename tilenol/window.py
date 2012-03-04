@@ -40,13 +40,24 @@ class State(object):
 
 class LayoutProperties(object):
 
-    def clear(self):
-        self.__dict__.clear()
+    short_to_long = {
+        'group': '_NET_WM_DESKTOP',
+        }
+    long_to_short = {v: k for k, v in short_to_long.items()}
+
+    def __init__(self, window):
+        super().__setattr__('window', window)
 
     def __getattr__(self, name):
         return None
 
-    # TODO(tailhook) expose layout properties to x properties
+    def __setattr__(self, name, value):
+        if getattr(self, name) != value:
+            super().__setattr__(name, value)
+            if name in self.short_to_long:
+                self.window.set_property(self.short_to_long[name], value)
+            else:
+                self.window.set_property('_TN_LP_' + name.upper(), value)
 
 
 @has_dependencies
@@ -65,7 +76,7 @@ class Window(object):
         self.done = State()
         self.real = State()
         self.props = {}
-        self.lprops = LayoutProperties()
+        self.lprops = LayoutProperties(self)
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.wid)
@@ -200,7 +211,7 @@ class Window(object):
 
     def update_property(self, atom):
         try:
-            self.set_property(self.xcore.atom[atom].name,
+            self._set_property(self.xcore.atom[atom].name,
                   *self.xcore.get_property(self, atom))
         except XError:
             log.exception("Error getting property for window %x", self)
@@ -213,10 +224,52 @@ class Window(object):
             time=self.xcore.last_event.time,
             )
 
-    def set_property(self, name, typ, value):
+    def _set_property(self, name, typ, value):
         if name == 'WM_NORMAL_HINTS':
             self.want.hints = SizeHints.from_property(typ, value)
+        if name in self.lprops.long_to_short:
+            if isinstance(value, tuple) and len(value) == 1:
+                value = value[0]
+            super(LayoutProperties, self.lprops).__setattr__(
+                self.lprops.long_to_short[name], value)
+        elif name.startswith('_TN_LP_'):
+            if isinstance(value, tuple) and len(value) == 1:
+                value = value[0]
+            super(LayoutProperties, self.lprops).__setattr__(
+                name[len('_TN_LP_'):], value)
         self.props[name] = value
+
+    def set_property(self, name, value):
+        if isinstance(value, int):
+            self.xcore.raw.ChangeProperty(
+                window=self,
+                mode=self.xcore.PropMode.Replace,
+                property=getattr(self.xcore.atom, name),
+                type=self.xcore.atom.CARDINAL,
+                format=32,
+                data_len=1,
+                data=struct.pack('<L', value))
+        elif isinstance(value, Window):
+            self.xcore.raw.ChangeProperty(
+                window=self,
+                mode=self.xcore.PropMode.Replace,
+                property=getattr(self.xcore.atom, name),
+                type=self.xcore.atom.WINDOW,
+                format=32,
+                data_len=1,
+                data=struct.pack('<L', value))
+        elif isinstance(value, (str, bytes)):
+            if isinstance(value, str):
+                value = value.encode('utf-8')
+            self.xcore.raw.ChangeProperty(
+                window=self,
+                mode=self.xcore.PropMode.Replace,
+                property=getattr(self.xcore.atom, name),
+                type=self.xcore.atom.UTF8_STRING,
+                format=8,
+                data=value)
+        else:
+            raise NotImplementedError(value)
 
     def destroyed(self):
         if self.frame:

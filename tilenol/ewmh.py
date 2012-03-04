@@ -24,21 +24,8 @@ class Ewmh(object):
             format=32,
             data_len=1,
             data=struct.pack('<L', self.window))
-        self.xcore.raw.ChangeProperty(
-            window=self.window,
-            mode=self.xcore.PropMode.Replace,
-            property=self.xcore.atom._NET_SUPPORTING_WM_CHECK,
-            type=self.xcore.atom.WINDOW,
-            format=32,
-            data_len=1,
-            data=struct.pack('<L', self.window))
-        self.xcore.raw.ChangeProperty(
-            window=self.window,
-            mode=self.xcore.PropMode.Replace,
-            property=self.xcore.atom._NET_WM_NAME,
-            type=self.xcore.atom.UTF8_STRING,
-            format=8,
-            data=b'tilenol')
+        self.window.set_property('_NET_SUPPORTING_WM_CHECK', self.window)
+        self.window.set_property('_NET_WM_NAME', 'tilenol')
 
     def showing_window(self, win):
         self.xcore.raw.ChangeProperty(
