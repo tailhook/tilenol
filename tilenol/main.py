@@ -109,9 +109,38 @@ class Tilenol(object):
             Sep(right=True),
             ]))
         self.bar.create_window()
+        self.catch_windows()
 
         signal.signal(signal.SIGCHLD, child_handler)
         self.loop()
+
+    def catch_windows(self):
+        cnotify = self.xcore.proto.events['CreateNotify'].type
+        mnotify = self.xcore.proto.events['MapRequest'].type
+        for w in self.xcore.raw.QueryTree(window=self.root_window)['children']:
+            if w == self.root_window or w in self.dispatcher.all_windows:
+                continue
+            attr = self.xcore.raw.GetWindowAttributes(window=w)
+            if attr['class'] == self.xcore.WindowClass.InputOnly:
+                continue
+            geom = self.xcore.raw.GetGeometry(drawable=w)
+            self.dispatcher.handle_CreateNotifyEvent(cnotify(0,
+                window=w,
+                parent=self.root_window.wid,
+                x=geom['x'],
+                y=geom['y'],
+                width=geom['width'],
+                height=geom['height'],
+                border_width=geom['border_width'],
+                override_redirect=attr['override_redirect'],
+                ))
+            win = self.dispatcher.windows[w]
+            if(attr['map_state'] != self.xcore.MapState.Unmapped
+                and not attr['override_redirect']):
+                self.dispatcher.handle_MapRequestEvent(mnotify(0,
+                    parent=self.root_window.wid,
+                    window=w,
+                    ))
 
     def setup_events(self):
         EM = self.xcore.EventMask

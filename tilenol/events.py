@@ -57,10 +57,11 @@ class EventDispatcher(object):
         try:
             win = self.windows[ev.window]
         except KeyError:
-            log.warning("Configure request for non-existent window %x",
+            log.warning("Configure request for non-existent window %r",
                 ev.window)
         else:
             win.want.visible = True
+            win.reparent_frame()
             if not hasattr(win, 'group'):
                 self.classifier.apply(win)
                 self.groupman.add_window(win)
@@ -69,9 +70,11 @@ class EventDispatcher(object):
         try:
             win = self.frames[ev.event]
         except KeyError:
-            log.warning("Enter notify for non-existent window %x", ev.event)
+            log.warning("Enter notify for non-existent window %r", ev.event)
         else:
-            win.focus()
+            if(win.props.get("WM_HINTS") is None
+                or win.props.get('WM_HINTS')[0] & 1):
+                win.focus()
 
     def handle_LeaveNotifyEvent(self, ev):
         pass  # nothing to do at the moment
@@ -80,28 +83,31 @@ class EventDispatcher(object):
         try:
             win = self.all_windows[ev.window]
         except KeyError:
-            log.warning("Map notify for non-existent window %x",
+            log.warning("Map notify for non-existent window %r",
                 ev.window)
         else:
             win.real.visible = True
 
     def handle_UnmapNotifyEvent(self, ev):
+        if ev.event not in self.frames:
+            return # do not need to track unmapping of unmanaged windows
         try:
-            win = self.all_windows[ev.window]
+            win = self.windows[ev.window]
         except KeyError:
-            log.warning("Unmap notify for non-existent window %x",
+            log.warning("Unmap notify for non-existent window %r",
                 ev.window)
         else:
             win.real.visible = False
             if win.frame:
                 win.ewmh.hiding_window(win)
                 win.frame.hide()
+                win.reparent_root()
 
     def handle_FocusInEvent(self, ev):
         try:
             win = self.all_windows[ev.event]
         except KeyError:
-            log.warning("Focus request for non-existent window %x",
+            log.warning("Focus request for non-existent window %r",
                 ev.window)
         else:
             if(ev.mode not in (self.xcore.NotifyMode.Grab,
@@ -113,7 +119,7 @@ class EventDispatcher(object):
         try:
             win = self.all_windows[ev.event]
         except KeyError:
-            log.warning("Focus request for non-existent window %x",
+            log.warning("Focus request for non-existent window %r",
                 ev.window)
         else:
             if(ev.mode not in (self.xcore.NotifyMode.Grab,
@@ -124,15 +130,20 @@ class EventDispatcher(object):
     def handle_CreateNotifyEvent(self, ev):
         win = di(self).inject(Window.from_notify(ev))
         if win.wid in self.windows:
-            log.warning("Create notify for already existent window %x",
+            log.warning("Create notify for already existent window %r",
                 win.wid)
             # TODO(tailhook) clean up old window
         if win.wid in self.all_windows:
             return
+        self.xcore.raw.ChangeWindowAttributes(window=win, params={
+                self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
+            })
+        for name in self.xcore.raw.ListProperties(window=win)['atoms']:
+            win.update_property(name)
         self.windows[win.wid] = win
         self.all_windows[win.wid] = win
         if win.toplevel and not win.override:
-            frm = win.reparent()
+            frm = win.create_frame()
             self.frames[frm.wid] = frm
             self.all_windows[frm.wid] = frm
 
@@ -146,7 +157,7 @@ class EventDispatcher(object):
         try:
             win = self.all_windows.pop(ev.window)
         except KeyError:
-            log.warning("Destroy notify for non-existent window %x",
+            log.warning("Destroy notify for non-existent window %r",
                 ev.window)
         else:
             self.windows.pop(ev.window, None)
@@ -159,7 +170,7 @@ class EventDispatcher(object):
         try:
             win = self.windows[ev.window]
         except KeyError:
-            log.warning("Configure request for non-existent window %x",
+            log.warning("Configure request for non-existent window %r",
                 ev.window)
         else:
             win.update_size_request(ev)
@@ -168,7 +179,7 @@ class EventDispatcher(object):
         try:
             win = self.windows[ev.window]
         except KeyError:
-            log.warning("Property notify event for non-existent window %x",
+            log.warning("Property notify event for non-existent window %r",
                 ev.window)
         else:
             win.update_property(ev.atom)
@@ -177,7 +188,7 @@ class EventDispatcher(object):
         try:
             win = self.all_windows[ev.window]
         except KeyError:
-            log.warning("Expose event for non-existent window %x",
+            log.warning("Expose event for non-existent window %r",
                 ev.window)
         else:
             win.expose(Rectangle(ev.x, ev.y, ev.width, ev.height))

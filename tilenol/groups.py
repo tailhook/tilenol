@@ -25,11 +25,11 @@ class GroupManager(object):
             di(self).inject(g)
         scr = self.screenman.screens[0]
         self.bounds = scr.inner_bounds
-        self.current_group.set_bounds(self.bounds)
-        self.current_group.show()
         self.commander['group'] = self.current_group
         self.commander['layout'] = self.current_group.current_layout
-        scr.add_listener(self.update_screen)
+        self.current_group.set_bounds(self.bounds)
+        self.current_group.show()
+        self.screenman.screens[0].add_listener(self.update_screen)
 
     def update_screen(self, screen):
         self.bounds = screen.inner_bounds

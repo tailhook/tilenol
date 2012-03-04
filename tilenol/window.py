@@ -1,5 +1,6 @@
 from collections import namedtuple
 import struct
+import logging
 
 from zorro.di import di, has_dependencies, dependency
 
@@ -7,6 +8,9 @@ from .xcb import Core, Rectangle, XError
 from .icccm import SizeHints
 from .commands import CommandDispatcher
 from .ewmh import Ewmh
+
+
+log = logging.getLogger(__name__)
 
 
 class SizeRequest(object):
@@ -156,13 +160,30 @@ class Window(object):
     def toplevel(self):
         return self.parent == self.xcore.root_window
 
-    def reparent(self):
+    def reparent_frame(self):
+        self.xcore.raw.ChangeSaveSet(window=self,
+                                     mode=self.xcore.SetMode.Insert)
+        self.xcore.raw.ReparentWindow(
+            window=self,
+            parent=self.frame.wid,
+            x=0, y=0)
+
+    def reparent_root(self):
+        self.xcore.raw.ReparentWindow(
+            window=self,
+            parent=self.xcore.root_window,
+            x=0, y=0)
+        self.xcore.raw.ChangeSaveSet(window=self,
+                                     mode=self.xcore.SetMode.Delete)
+
+
+    def create_frame(self):
         s = self.want.size
         self.frame = di(self).inject(Frame(self.xcore.create_toplevel(
             Rectangle(s.x, s.y, s.width, s.height),
             klass=self.xcore.WindowClass.InputOutput,
             params={
-                self.xcore.CW.BackPixel: 0x000000,
+                self.xcore.CW.BackPixel: 0xFF0000,
                 self.xcore.CW.BorderPixel: 0x808080,
                 self.xcore.CW.OverrideRedirect: True,
                 self.xcore.CW.EventMask:
@@ -172,18 +193,9 @@ class Window(object):
                     | self.xcore.EventMask.LeaveWindow
                     | self.xcore.EventMask.FocusChange
             }), self))
-        self.xcore.raw.ChangeWindowAttributes(window=self, params={
-                self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
-            })
         self.xcore.raw.ConfigureWindow(window=self.frame, params={
                 self.xcore.ConfigWindow.BorderWidth: 2,
             })
-        self.xcore.raw.ReparentWindow(
-            window=self,
-            parent=self.frame,
-            x=0, y=0)
-        for name in self.xcore.raw.ListProperties(window=self)['atoms']:
-            self.update_property(name)
         return self.frame
 
     def update_property(self, atom):
