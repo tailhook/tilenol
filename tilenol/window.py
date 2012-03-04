@@ -183,7 +183,7 @@ class Window(object):
             Rectangle(s.x, s.y, s.width, s.height),
             klass=self.xcore.WindowClass.InputOutput,
             params={
-                self.xcore.CW.BackPixel: 0xFF0000,
+                self.xcore.CW.BackPixel: 0x000000,
                 self.xcore.CW.BorderPixel: 0x808080,
                 self.xcore.CW.OverrideRedirect: True,
                 self.xcore.CW.EventMask:
@@ -325,10 +325,10 @@ class Frame(Window):
         rh = rect.height - self.border_width*2
         if hints:
             width, height = self._apply_hints(rw, rh, hints)
-            if width < rect.width:
-                x = rect.width//2 - width//2
-            if height < rect.height:
-                y = rect.height//2 - height//2
+            if width < rw:
+                x = rw//2 - width//2
+            if height < rh:
+                y = rh//2 - height//2
             # TODO(tailhook) obey gravity
         else:
             width = rw
