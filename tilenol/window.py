@@ -52,6 +52,7 @@ class Window(object):
     ewmh = dependency(Ewmh, 'ewmh')
 
     floating = None
+    border_width = 0
 
     def __init__(self, wid):
         self.wid = wid
@@ -146,8 +147,8 @@ class Window(object):
             self.xcore.raw.ConfigureWindow(window=self, params={
                 self.xcore.ConfigWindow.X: rect.x & 0xFFFF,
                 self.xcore.ConfigWindow.Y: rect.y & 0xFFFF,
-                self.xcore.ConfigWindow.Width: rect.width,
-                self.xcore.ConfigWindow.Height: rect.height,
+                self.xcore.ConfigWindow.Width: rect.width-self.border_width*2,
+                self.xcore.ConfigWindow.Height: rect.height-self.border_width*2,
                 })
         return True
 
@@ -161,7 +162,8 @@ class Window(object):
             Rectangle(s.x, s.y, s.width, s.height),
             klass=self.xcore.WindowClass.InputOutput,
             params={
-                self.xcore.CW.BackPixel: 0x0000FF,
+                self.xcore.CW.BackPixel: 0x000000,
+                self.xcore.CW.BorderPixel: 0x808080,
                 self.xcore.CW.OverrideRedirect: True,
                 self.xcore.CW.EventMask:
                     self.xcore.EventMask.SubstructureRedirect
@@ -170,10 +172,11 @@ class Window(object):
                     | self.xcore.EventMask.LeaveWindow
                     | self.xcore.EventMask.FocusChange
             }), self))
-        self.xcore.raw.ChangeWindowAttributes(
-            window=self,
-            params={
+        self.xcore.raw.ChangeWindowAttributes(window=self, params={
                 self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
+            })
+        self.xcore.raw.ConfigureWindow(window=self.frame, params={
+                self.xcore.ConfigWindow.BorderWidth: 2,
             })
         self.xcore.raw.ReparentWindow(
             window=self,
@@ -270,6 +273,7 @@ class Frame(Window):
     def __init__(self, wid, content):
         super().__init__(wid)
         self.content = content
+        self.border_width = 2
 
     def focus(self):
         self.done.focus = True
@@ -284,12 +288,18 @@ class Frame(Window):
         self.content.real.focus = False
         assert self.commander.get('window') in (self.content, None)
         self.commander.pop('window', None)
+        self.xcore.raw.ChangeWindowAttributes(window=self, params={
+            self.xcore.CW.BorderPixel: 0x808080,
+        })
 
     def focus_in(self):
         self.real.focus = True
         self.content.real.focus = True
         assert self.commander.get('window') in (self.content, None)
         self.commander['window'] = self.content
+        self.xcore.raw.ChangeWindowAttributes(window=self, params={
+            self.xcore.CW.BorderPixel: 0x0000FF,
+        })
 
     def destroyed(self):
         if self.commander.get('window') is self.content:
@@ -297,18 +307,20 @@ class Frame(Window):
 
     def configure_content(self, rect):
         hints = self.content.want.hints
-        x = 2
-        y = 2
+        x = 0
+        y = 0
+        rw = rect.width - self.border_width*2
+        rh = rect.height - self.border_width*2
         if hints:
-            width, height = self._apply_hints(rect.width-4, rect.height-4, hints)
+            width, height = self._apply_hints(rw, rh, hints)
             if width < rect.width:
                 x = rect.width//2 - width//2
             if height < rect.height:
                 y = rect.height//2 - height//2
             # TODO(tailhook) obey gravity
         else:
-            width = rect.width
-            height = rect.height
+            width = rw
+            height = rh
         self.content.done.size = Rectangle(x, y, width, height)
         self.xcore.raw.ConfigureWindow(window=self.content, params={
             self.xcore.ConfigWindow.X: x,
