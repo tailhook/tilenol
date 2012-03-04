@@ -19,8 +19,13 @@ class LayoutMeta(type):
 class Layout(metaclass=LayoutMeta):
 
     def __init__(self):
+        self.visible = False
         self.relayout = Event('layout.relayout')
-        self.relayout.listen(self.layout)
+        self.relayout.listen(self.check_relayout)
+
+    def check_relayout(self):
+        if self.visible:
+            self.layout()
 
     @classmethod
     def get_defined_classes(cls, base):
@@ -43,10 +48,12 @@ class Layout(metaclass=LayoutMeta):
                 for i in s.visible_windows:
                     yield i
 
-    def hide_all(self):
+    def hide(self):
+        self.visible = False
         for i in self.all_visible_windows():
             i.hide()
 
-    def show_all(self):
+    def show(self):
+        self.visible = True
         for i in self.all_visible_windows():
             i.show()

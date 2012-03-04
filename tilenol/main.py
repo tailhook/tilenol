@@ -68,6 +68,7 @@ class Tilenol(object):
 
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
+        cmd['tilenol'] = self
         keys = KeyRegistry()
         inj['key-registry'] = inj.inject(keys)
         mouse = MouseRegistry()
@@ -132,3 +133,6 @@ class Tilenol(object):
                 self.dispatcher.dispatch(i)
             except Exception:
                 log.exception("Error handling event %r", i)
+
+    def cmd_restart(self):
+        os.execv(sys.executable, [sys.executable] + sys.argv)

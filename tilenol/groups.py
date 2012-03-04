@@ -26,6 +26,7 @@ class GroupManager(object):
         scr = self.screenman.screens[0]
         self.bounds = scr.inner_bounds
         self.current_group.set_bounds(self.bounds)
+        self.current_group.show()
         self.commander['group'] = self.current_group
         self.commander['layout'] = self.current_group.current_layout
         scr.add_listener(self.update_screen)
@@ -108,7 +109,7 @@ class Group(object):
         del win.group
 
     def hide(self):
-        self.current_layout.hide_all()
+        self.current_layout.hide()
         for win in self.floating_windows:
             win.hide()
 
@@ -118,7 +119,7 @@ class Group(object):
         #    win.set_screen(rect)
 
     def show(self):
-        self.current_layout.show_all()
+        self.current_layout.show()
         for win in self.floating_windows:
             #win.set_screen(self.bounds)
             win.show()

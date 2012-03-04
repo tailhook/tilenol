@@ -10,6 +10,7 @@ from functools import partial
 from collections import namedtuple, deque
 
 from zorro import channel, Lock, gethub, Condition, Future
+from zorro.util import setcloexec
 
 from .auth import read_auth
 
@@ -43,6 +44,7 @@ class Channel(channel.PipelinedReqChannel):
         else:
             self._sock = socket.socket(socket.AF_INET,
                 socket.SOCK_STREAM, socket.IPPROTO_TCP)
+        setcloexec(self._sock)
         self._sock.setblocking(0)
         try:
             if unixsock:

@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+
+from tilenol.__main__ import main
+
+main()
