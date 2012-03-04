@@ -144,8 +144,8 @@ class Window(object):
         else:
             self.done.size = rect
             self.xcore.raw.ConfigureWindow(window=self, params={
-                self.xcore.ConfigWindow.X: rect.x,
-                self.xcore.ConfigWindow.Y: rect.y,
+                self.xcore.ConfigWindow.X: rect.x & 0xFFFF,
+                self.xcore.ConfigWindow.Y: rect.y & 0xFFFF,
                 self.xcore.ConfigWindow.Width: rect.width,
                 self.xcore.ConfigWindow.Height: rect.height,
                 })

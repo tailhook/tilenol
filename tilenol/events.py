@@ -3,6 +3,7 @@ import logging
 from zorro.di import di, has_dependencies, dependency
 
 from .keyregistry import KeyRegistry
+from .mouseregistry import MouseRegistry
 from .window import Window
 from .xcb import Core, Rectangle, XError
 from .groups import GroupManager
@@ -17,6 +18,7 @@ log = logging.getLogger(__name__)
 class EventDispatcher(object):
 
     keys = dependency(KeyRegistry, 'key-registry')
+    mouse = dependency(MouseRegistry, 'mouse-registry')
     xcore = dependency(Core, 'xcore')
     groupman = dependency(GroupManager, 'group-manager')
     classifier = dependency(Classifier, 'classifier')
@@ -41,6 +43,15 @@ class EventDispatcher(object):
 
     def handle_KeyReleaseEvent(self, ev):
         pass  # nothing to do at the moment
+
+    def handle_ButtonPressEvent(self, ev):
+        self.mouse.dispatch_button_press(ev)
+
+    def handle_ButtonReleaseEvent(self, ev):
+        self.mouse.dispatch_button_release(ev)
+
+    def handle_MotionNotifyEvent(self, ev):
+        self.mouse.dispatch_motion(ev)
 
     def handle_MapRequestEvent(self, ev):
         try:

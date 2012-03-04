@@ -8,6 +8,7 @@ from zorro.di import DependencyInjector, di, has_dependencies, dependency
 
 from .xcb import Connection, Proto, Core, Keysyms, Rectangle
 from .keyregistry import KeyRegistry
+from .mouseregistry import MouseRegistry
 from .ewmh import Ewmh
 from .window import Window
 from .events import EventDispatcher
@@ -50,8 +51,6 @@ class Tilenol(object):
         inj['xcore'] = xcore = Core(conn)
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
-        keys = KeyRegistry()
-        inj['key-registry'] = inj.inject(keys)
         inj['config'] = inj.inject(Config())
         # TODO(tailhook) query xinerama screens
         inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
@@ -59,6 +58,10 @@ class Tilenol(object):
 
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
+        keys = KeyRegistry()
+        inj['key-registry'] = inj.inject(keys)
+        mouse = MouseRegistry()
+        inj['mouse-registry'] = inj.inject(mouse)
 
         from .layout.examples import Tile, Max, InstantMsg, Gimp
         gman = inj.inject(GroupManager(map(inj.inject, (
@@ -83,6 +86,8 @@ class Tilenol(object):
 
         self.xcore.init_keymap()
         self.register_hotkeys(keys)
+        mouse.init_buttons()
+        mouse.register_buttons(self.root_window)
         self.setup_events()
 
         from .widgets import Bar, Groupbox, Clock, Sep
