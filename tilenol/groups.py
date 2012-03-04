@@ -75,9 +75,13 @@ class Group(object):
 
     def add_window(self, win):
         if win.floating:
+            # Ensure that floating windows are always above others
+            win.frame.restack(win.xcore.StackMode.Above)
             self.floating_windows.append(win)
             win.show()
         else:
+            # Ensure that non-floating windows are always below floating
+            win.frame.restack(win.xcore.StackMode.Below)
             self.current_layout.add(win)
         win.group = self
         self.all_windows.append(win)
@@ -120,7 +124,7 @@ class Group(object):
                 nwin = all[0]
             else:
                 nwin = all[idx+1]
-        nwin.focus()
+        nwin.frame.focus()
 
     def cmd_focus_prev(self):
         all = list(self.current_layout.all_visible_windows())
@@ -135,4 +139,4 @@ class Group(object):
                 nwin = all[idx - 1]
             else:
                 nwin = all[-1]
-        nwin.focus()
+        nwin.frame.focus()

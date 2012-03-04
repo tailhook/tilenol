@@ -137,7 +137,10 @@ class MouseRegistry(object):
         if 'window' not in self.commander:
             return
         win = self.commander['window']
-        print(ev)
+        if not win.floating:
+            win.make_floating()
+        else:
+            win.frame.restack(self.core.StackMode.TopIf)
         if ev.detail == 1:
             self.drag = DragMove(win, ev.root_x, ev.root_y)
         elif ev.detail == 3:

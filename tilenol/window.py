@@ -225,6 +225,32 @@ class Window(object):
     def cmd_kill(self):
         self.xcore.raw.KillClient(resource=self)
 
+    def make_floating(self):
+        if self.floating:
+            return
+        gr = self.group
+        gr.remove_window(self)
+        self.floating = True
+        gr.add_window(self)
+
+    cmd_make_floating = make_floating
+
+    def make_tiled(self):
+        if not self.floating:
+            return
+        gr = self.group
+        gr.remove_window(self)
+        self.floating = False
+        gr.add_window(self)
+
+    cmd_make_tiled = make_tiled
+
+    def restack(self, stack_mode):
+        self.stack_mode = stack_mode
+        self.xcore.raw.ConfigureWindow(window=self, params={
+            self.xcore.ConfigWindow.StackMode: stack_mode,
+            })
+
 
 class DisplayWindow(Window):
 
@@ -247,6 +273,8 @@ class Frame(Window):
 
     def focus(self):
         self.done.focus = True
+        if self.content.floating:
+            self.restack(self.xcore.StackMode.TopIf)
         self.content.focus()
 
     def focus_out(self):
