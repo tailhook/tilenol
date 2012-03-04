@@ -2,6 +2,7 @@ from functools import partial
 import sys
 import subprocess
 import os.path
+import signal
 import logging
 
 from zorro.di import DependencyInjector, di, has_dependencies, dependency
@@ -21,6 +22,15 @@ from .classify import Classifier
 
 log = logging.getLogger(__name__)
 
+
+def child_handler(sig, frame):
+    while True:
+        try:
+            pid, result = os.waitpid(-1, os.WNOHANG)
+            if pid is 0:
+                break
+        except OSError:
+            break
 
 @has_dependencies
 class Tilenol(object):
@@ -99,6 +109,7 @@ class Tilenol(object):
             ]))
         self.bar.create_window()
 
+        signal.signal(signal.SIGCHLD, child_handler)
         self.loop()
 
     def setup_events(self):
