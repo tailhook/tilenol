@@ -11,7 +11,6 @@ from tilenol.window import ClientMessageWindow, Window, Rectangle
 class TrayIcon(Window):
 
     def destroyed(self):
-        print("TRAY ICON")
         super().destroyed()
         self.systray.remove(self)
 
