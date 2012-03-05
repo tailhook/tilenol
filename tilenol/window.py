@@ -115,18 +115,8 @@ class Window(object):
             override_redirect=False,
             )
 
-    def send_event(self, event_type, **kw):
-        etype = self.xcore.proto.events[event_type]
-        buf = bytearray([etype.number])
-        etype.write_to(buf, kw)
-        buf[2:2] = b'\x00\x00'
-        buf += b'\x00'*(32 - len(buf))
-        self.xcore.raw.SendEvent(
-            propagate=False,
-            destination=self,
-            event_mask=0,
-            event=buf,
-            )
+    def send_event(self, event_type, event_mask=0, **kw):
+        self.xcore.send_event(event_type, event_mask, self, **kw)
 
     def __index__(self):
         return self.wid
@@ -171,13 +161,16 @@ class Window(object):
     def toplevel(self):
         return self.parent == self.xcore.root_window
 
-    def reparent_frame(self):
+    def reparent_to(self, window):
         self.xcore.raw.ChangeSaveSet(window=self,
                                      mode=self.xcore.SetMode.Insert)
         self.xcore.raw.ReparentWindow(
             window=self,
-            parent=self.frame.wid,
+            parent=window,
             x=0, y=0)
+
+    def reparent_frame(self):
+        self.reparent_to(self.frame)
 
     def reparent_root(self):
         self.xcore.raw.ReparentWindow(
@@ -214,7 +207,7 @@ class Window(object):
             self._set_property(self.xcore.atom[atom].name,
                   *self.xcore.get_property(self, atom))
         except XError:
-            log.exception("Error getting property for window %x", self)
+            log.exception("Error getting property for window %r", self)
 
     def focus(self):
         self.done.focus = True
@@ -328,6 +321,16 @@ class DisplayWindow(Window):
 
     def expose(self, rect):
         self.expose_handler(rect)
+
+
+class ClientMessageWindow(Window):
+
+    def __init__(self, wid, msg_handler):
+        super().__init__(wid)
+        self.msg_handler = msg_handler
+
+    def client_message(self, message):
+        self.msg_handler(message)
 
 
 @has_dependencies

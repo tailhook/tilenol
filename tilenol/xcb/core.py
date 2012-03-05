@@ -138,6 +138,20 @@ class Core(object):
             })
         return wid
 
+    def send_event(self, event_type, event_mask, dest, **kw):
+        etype = self.proto.events[event_type]
+        buf = bytearray([etype.number])
+        etype.write_to(buf, kw)
+        buf[2:2] = b'\x00\x00'
+        buf += b'\x00'*(32 - len(buf))
+        self.raw.SendEvent(
+            propagate=False,
+            destination=dest,
+            event_mask=event_mask,
+            event=buf,
+            )
+
+
     def get_property(self, win, name):
         result = self.raw.GetProperty(
                 delete=False,

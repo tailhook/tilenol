@@ -61,6 +61,10 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.want.visible = True
+            if win.frame is None:
+                frm = win.create_frame()
+                self.frames[frm.wid] = frm
+                self.all_windows[frm.wid] = frm
             win.reparent_frame()
             if not hasattr(win, 'group'):
                 self.classifier.apply(win)
@@ -142,10 +146,6 @@ class EventDispatcher(object):
             win.update_property(name)
         self.windows[win.wid] = win
         self.all_windows[win.wid] = win
-        if win.toplevel and not win.override:
-            frm = win.create_frame()
-            self.frames[frm.wid] = frm
-            self.all_windows[frm.wid] = frm
 
     def handle_ConfigureNotifyEvent(self, ev):
         pass
@@ -160,8 +160,8 @@ class EventDispatcher(object):
             log.warning("Destroy notify for non-existent window %r",
                 ev.window)
         else:
-            self.windows.pop(ev.window, None)
-            self.frames.pop(ev.window, None)
+            self.windows.pop(win.wid, None)
+            self.frames.pop(win.wid, None)
             if hasattr(win, 'group'):
                 win.group.remove_window(win)
             win.destroyed()
@@ -197,5 +197,6 @@ class EventDispatcher(object):
         type = self.xcore.atom[ev.type]
         import struct
         print("ClientMessage", ev, repr(type), struct.unpack('<5L', ev.data))
+        self.all_windows[ev.window].client_message(ev)
 
 

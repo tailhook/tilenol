@@ -101,11 +101,13 @@ class Tilenol(object):
         mouse.register_buttons(self.root_window)
         self.setup_events()
 
-        from .widgets import Bar, Groupbox, Clock, Sep
+        from .widgets import Bar, Groupbox, Clock, Sep, Systray
         self.bar = inj.inject(Bar([
             Groupbox(),
             Sep(),
             Clock(right=True),
+            Sep(right=True),
+            Systray(right=True),
             Sep(right=True),
             ]))
         self.bar.create_window()

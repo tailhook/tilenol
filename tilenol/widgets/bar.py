@@ -64,7 +64,7 @@ class Bar(object):
             Rectangle(0, 0, self.width, self.height),
             klass=self.xcore.WindowClass.InputOutput,
             params={
-                CW.EventMask: EM.Exposure,
+                CW.EventMask: EM.Exposure | EM.SubstructureNotify,
                 CW.OverrideRedirect: True,
             }), self.expose)
         di(self).inject(self.window)
