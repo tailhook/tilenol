@@ -102,10 +102,13 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = False
+            win.done.visible = False
             if win.frame:
                 win.ewmh.hiding_window(win)
                 win.frame.hide()
                 win.reparent_root()
+            if hasattr(win, 'group'):
+                win.group.remove_window(win)
 
     def handle_FocusInEvent(self, ev):
         try:
