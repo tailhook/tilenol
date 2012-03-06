@@ -80,6 +80,8 @@ class Bar(object):
         r = self.width
         for i in self.widgets:
             self.cairo.save()
+            self.cairo.rectangle(l, 0, r-l, self.height)
+            self.cairo.clip()
             l, r = i.draw(self.cairo, l, r)
             self.cairo.restore()
         self.xcore.raw.PutImage(
