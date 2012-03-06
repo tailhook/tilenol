@@ -102,7 +102,7 @@ class Tilenol(object):
         self.setup_events()
 
         from .widgets import Bar, Groupbox, Clock, Sep, Systray, Title, Icon
-        from .widgets import CPUGraph, MemoryGraph, SwapGraph
+        from .widgets import CPUGraph, MemoryGraph, SwapGraph, Battery
         self.bar = inj.inject(Bar([
             Groupbox(),
             Sep(),
@@ -114,6 +114,7 @@ class Tilenol(object):
             CPUGraph(right=True),
             MemoryGraph(right=True),
             SwapGraph(right=True),
+            Battery(right=True),
             Sep(right=True),
             Title(),
             ]))
