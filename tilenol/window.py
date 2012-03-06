@@ -230,6 +230,16 @@ class Window(object):
                 value = value[0]
             super(LayoutProperties, self.lprops).__setattr__(
                 name[len('_TN_LP_'):], value)
+        elif name == '_NET_WM_ICON':
+            icons = self.icons = []
+            lst = list(value)
+            while lst:
+                w = lst.pop(0)
+                h = lst.pop(0)
+                idata = lst[:w*h]
+                del lst[:w*h]
+                icons.append((w, h, idata))
+            icons.sort()
         self.props[name] = value
 
     def set_property(self, name, value):

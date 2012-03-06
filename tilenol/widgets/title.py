@@ -1,5 +1,8 @@
+import array
+
 from zorro.di import di, has_dependencies, dependency
 from cairo import SolidPattern
+import cairo
 
 from .base import Widget, Padding
 from tilenol.commands import CommandDispatcher
@@ -34,3 +37,49 @@ class Title(Widget):
         canvas.show_text(win.props.get('_NET_WM_NAME')
             or win.props.get('WM_NAME'))
         return r, r
+
+
+@has_dependencies
+class Icon(Widget):
+
+    dispatcher = dependency(CommandDispatcher, 'commander')
+
+    def __init__(self, *,
+            padding=Padding(2, 2, 2, 2),
+            right=False):
+        super().__init__(right=right)
+        self.padding = padding
+
+    def draw(self, canvas, l, r):
+        win = self.dispatcher.get('window', None)
+        if not win or not getattr(win, 'icons', None):
+            return l, r
+        h = self.height - self.padding.bottom - self.padding.top
+        for iw, ih, data in win.icons:
+            if iw >= h or ih >= h:
+                break
+        scale = min(iw/h, ih/h)
+        data = array.array('I', data)
+        assert data.itemsize == 4
+        surf = cairo.ImageSurface.create_for_data(memoryview(data),
+            cairo.FORMAT_ARGB32, iw, ih, iw*4)
+        if self.right:
+            x = r - self.padding.right - h
+        else:
+            x = l + self.padding.left
+        y = self.padding.top
+        pat = cairo.SurfacePattern(surf)
+        pat.set_matrix(cairo.Matrix(
+            xx=scale, yy=scale,
+            x0=-x*scale, y0=-y*scale))
+        pat.set_filter(cairo.FILTER_GOOD)
+        canvas.set_source(pat)
+        canvas.rectangle(x, y, h, h)
+        canvas.scale(scale, scale)
+        canvas.fill()
+        if self.right:
+            return l, r - h - self.padding.left - self.padding.right
+        else:
+            return l + h + self.padding.left + self.padding.right, r
+
+
