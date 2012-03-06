@@ -102,15 +102,20 @@ class Tilenol(object):
         self.setup_events()
 
         from .widgets import Bar, Groupbox, Clock, Sep, Systray, Title, Icon
+        from .widgets import CPUGraph, MemoryGraph, SwapGraph
         self.bar = inj.inject(Bar([
             Groupbox(),
             Sep(),
             Icon(),
-            Title(),
             Clock(right=True),
             Sep(right=True),
             Systray(right=True),
             Sep(right=True),
+            CPUGraph(right=True),
+            MemoryGraph(right=True),
+            SwapGraph(right=True),
+            Sep(right=True),
+            Title(),
             ]))
         self.bar.create_window()
         self.catch_windows()
