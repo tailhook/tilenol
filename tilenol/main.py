@@ -32,6 +32,9 @@ def child_handler(sig, frame):
         except OSError:
             break
 
+def quit_handler(sig, frame):
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
 @has_dependencies
 class Tilenol(object):
 
@@ -122,6 +125,7 @@ class Tilenol(object):
         self.catch_windows()
 
         signal.signal(signal.SIGCHLD, child_handler)
+        signal.signal(signal.SIGQUIT, quit_handler)
         self.loop()
 
     def catch_windows(self):
