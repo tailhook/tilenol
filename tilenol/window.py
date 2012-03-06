@@ -8,6 +8,7 @@ from .xcb import Core, Rectangle, XError
 from .icccm import SizeHints
 from .commands import CommandDispatcher
 from .ewmh import Ewmh
+from .event import Event
 
 
 log = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ class Window(object):
         self.real = State()
         self.props = {}
         self.lprops = LayoutProperties(self)
+        self.property_changed = Event('window.property_changed')
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.wid)
@@ -241,6 +243,7 @@ class Window(object):
                 icons.append((w, h, idata))
             icons.sort()
         self.props[name] = value
+        self.property_changed.emit()
 
     def set_property(self, name, value):
         if isinstance(value, int):

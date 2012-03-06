@@ -25,6 +25,19 @@ class Title(Widget):
         self.color = color
         self.padding = padding
 
+    def __zorro_di_done__(self):
+        self.dispatcher.events['window'].listen(self.window_changed)
+        self.oldwin = None
+
+    def window_changed(self):
+        if self.oldwin is not None:
+            self.oldwin.property_changed.unlisten(self.bar.redraw.emit)
+        win = self.dispatcher.get('window', None)
+        if win is not None:
+            win.property_changed.listen(self.bar.redraw.emit)
+        self.oldwin = win
+        self.bar.redraw.emit()
+
     def draw(self, canvas, l, r):
         win = self.dispatcher.get('window', None)
         if not win:
@@ -49,6 +62,19 @@ class Icon(Widget):
             right=False):
         super().__init__(right=right)
         self.padding = padding
+
+    def __zorro_di_done__(self):
+        self.dispatcher.events['window'].listen(self.window_changed)
+        self.oldwin = None
+
+    def window_changed(self):
+        if self.oldwin is not None:
+            self.oldwin.property_changed.unlisten(self.bar.redraw.emit)
+        win = self.dispatcher.get('window', None)
+        if win is not None:
+            win.property_changed.listen(self.bar.redraw.emit)
+        self.oldwin = win
+        self.bar.redraw.emit()
 
     def draw(self, canvas, l, r):
         win = self.dispatcher.get('window', None)
