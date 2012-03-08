@@ -44,6 +44,7 @@ class _Graph(Widget):
             current = r - self.padding.right - self.samples
         else:
             current = l + self.padding.left
+        canvas.move_to(current, y - self.values[-1]*k)
         for val in reversed(self.values):
             canvas.line_to(current, y-val*k)
             current += 1
