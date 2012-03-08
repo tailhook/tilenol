@@ -45,16 +45,16 @@ class _Graph(Widget):
         k = h/(self.maxvalue or 1)
         y = self.height - self.padding.bottom
         if self.right:
-            current = r - self.padding.right - self.samples
+            start = current = r - self.padding.right - self.samples
         else:
-            current = l + self.padding.left
+            start = current = l + self.padding.left
         canvas.move_to(current, y - self.values[-1]*k)
         for val in reversed(self.values):
             canvas.line_to(current, y-val*k)
             current += 1
         canvas.stroke_preserve()
         canvas.line_to(current, y + self.line_width/2.0)
-        canvas.line_to(l, y + self.line_width/2.0)
+        canvas.line_to(start, y + self.line_width/2.0)
         canvas.set_source(self.fill_color)
         canvas.fill()
         if self.right:
