@@ -10,10 +10,44 @@ class Drag(object):
         self.win = win
         if self.win.frame:
             self.win = self.win.frame
+        self.hint = self.win.add_hint()
         self.start(x, y)
+        self.update_hint()
 
     def moved_to(self, x, y):
-        return self.motion(x + self.x, y + self.y)
+        self.motion(x + self.x, y + self.y)
+        self.update_hint()
+
+    def update_hint(self):
+        sz = self.win.done.size
+        txt = '{}, {} {}x{}'.format(*sz)
+        if hasattr(self.win, 'content'):
+            hints = self.win.content.want.hints
+        else:
+            hints = self.win.want.hints
+        if hints:
+            bw = getattr(hints, 'base_width', 0)
+            bh = getattr(hints, 'base_height', 0)
+            if hasattr(hints, 'width_inc'):
+                if hasattr(hints, 'height_inc'):
+                    txt += '\n{} cols {} rows'.format(
+                        (sz.width - bw)//hints.width_inc,
+                        (sz.height - bh)//hints.height_inc,
+                        )
+                else:
+                    txt += '\n{} cols'.format((sz.width - bw)//hints.width_inc)
+            else:
+                txt += '\n{} rows'.format((sz.height - bh)//hints.height_inc)
+        self.hint.set_text(txt)
+        hsz = self.hint.done.size
+        wsz = self.win.done.size
+        self.hint.set_bounds(Rectangle(
+            (wsz.width - hsz.width)//2,
+            (wsz.height - hsz.height)//2,
+            hsz.width, hsz.height))
+
+    def stop(self):
+        self.hint.destroy()
 
 
 class DragMove(Drag):
@@ -154,6 +188,7 @@ class MouseRegistry(object):
         if not self.drag:
             return
         self.drag.moved_to(ev.root_x, ev.root_y)
+        self.drag.stop()
         self.drag = None
 
     def dispatch_motion(self, ev):

@@ -64,3 +64,11 @@ class Theme(SubTheme):
         self.bar.separator_width = 1
         self.bar.set_color('separator_color', gray)
 
+        self.hint = SubTheme('hint')
+        self.hint.font = Font('Consolas', 18)
+        self.hint.set_color('background', black)
+        self.hint.set_color('border_color', gray)
+        self.hint.set_color('text_color', white)
+        self.hint.border_width = 2
+        self.hint.padding = Padding(5, 6, 9, 6)
+

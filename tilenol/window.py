@@ -2,6 +2,7 @@ from collections import namedtuple
 import struct
 import logging
 
+import cairo
 from zorro.di import di, has_dependencies, dependency
 
 from .xcb import Core, Rectangle, XError
@@ -338,6 +339,103 @@ class DisplayWindow(Window):
         self.expose_handler(rect)
 
 
+@has_dependencies
+class HintWindow(Window):
+
+    cairo = None
+
+    theme = dependency(Theme, 'theme')
+
+    def __init__(self, wid, parent):
+        super().__init__(wid)
+        self.parent = parent
+        self.redraw_ev = Event('hint.redraw')
+        self.redraw_ev.listen(self.do_redraw)
+        self.show_ev = Event('hint.show')
+        self.show_ev.listen(self.do_show)
+
+    def __zorro_di_done__(self):
+        self.sizer = cairo.Context(
+            cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1))
+        sx, sy, w, h, ax, ay = self.sizer.text_extents('1')
+        self.line_height = int(h - sy)
+        self.font = self.theme.hint.font
+        self.font.apply(self.sizer)
+        self.padding = self.theme.hint.padding
+        self.color = self.theme.hint.text_color_pat
+        self.background = self.theme.hint.background_pat
+
+        self._gc = self.xcore._conn.new_xid()  # TODO(tialhook) private api?
+        self.xcore.raw.CreateGC(
+            cid=self._gc,
+            drawable=self.xcore.root_window,
+            params={},
+            )
+
+    def set_text(self, text):
+        self.text = text
+        lines = text.split('\n')
+        w = 0
+        h = 0
+        for line in lines:
+            sx, sy, tw, th, ax, ay = self.sizer.text_extents(line)
+            w = max(w, tw)
+            h += th
+        w += self.padding.left + self.padding.right
+        h += self.padding.top + self.padding.bottom
+        w = int(w)
+        h = int(h)
+        need_resize = (self.cairo is None or
+                w != self.cairo.get_target().get_width() and
+                h != self.cairo.get_target().get_height)
+        if need_resize:
+            self.cairo = cairo.Context(cairo.ImageSurface(
+                cairo.FORMAT_ARGB32, w, h))
+            self.font.apply(self.cairo)
+            psz = self.parent.done.size
+            self.set_bounds(Rectangle(
+                (psz.width - w)//2 - self.border_width,
+                (psz.height - h)//2 - self.border_width,
+                w, h))
+        self.redraw_ev.emit()
+
+    def do_redraw(self):
+        tgt = self.cairo.get_target()
+        w = tgt.get_width()
+        h = tgt.get_height()
+        self.cairo.set_source(self.background)
+        self.cairo.rectangle(0, 0, w, h)
+        self.cairo.fill()
+        self.cairo.set_source(self.color)
+        y = self.padding.top + self.line_height
+        for line in self.text.split('\n'):
+            sx, sy, tw, th, ax, ay = self.sizer.text_extents(line)
+            self.cairo.move_to((w - tw)//2, y)
+            self.cairo.show_text(line)
+            y += th
+        self.show_ev.emit()
+
+    def expose(self, rect):
+        self.show_ev.emit()
+
+    def do_show(self):
+        tgt = self.cairo.get_target()
+        w = tgt.get_width()
+        h = tgt.get_height()
+        self.xcore.raw.PutImage(
+            format=self.xcore.ImageFormat.ZPixmap,
+            drawable=self,
+            gc=self._gc,
+            width=w,
+            height=h,
+            dst_x=0,
+            dst_y=0,
+            left_pad=0,
+            depth=24,
+            data=bytes(tgt),
+            )
+
+
 class ClientMessageWindow(Window):
 
     def __init__(self, wid, msg_handler):
@@ -446,3 +544,26 @@ class Frame(Window):
             return False
         self.configure_content(rect)
         return True
+
+    def add_hint(self):
+        res = di(self).inject(HintWindow(self.xcore.create_window(
+            Rectangle(0, 0, 1, 1),
+            klass=self.xcore.WindowClass.InputOutput,
+            parent=self,
+            params={
+                self.xcore.CW.BackPixel: self.theme.hint.background,
+                self.xcore.CW.BorderPixel: self.theme.hint.border_color,
+                self.xcore.CW.OverrideRedirect: True,
+                self.xcore.CW.EventMask:
+                    self.xcore.EventMask.SubstructureRedirect
+                    | self.xcore.EventMask.SubstructureNotify
+                    | self.xcore.EventMask.EnterWindow
+                    | self.xcore.EventMask.LeaveWindow
+                    | self.xcore.EventMask.FocusChange
+            }), self))
+        self.xcore.raw.ConfigureWindow(window=res, params={
+            self.xcore.ConfigWindow.BorderWidth: self.theme.hint.border_width,
+            })
+        res.show()
+        return res
+

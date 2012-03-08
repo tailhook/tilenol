@@ -120,13 +120,20 @@ class Core(object):
             self.keysym_to_keycode[row[1]] = row[0]
 
     def create_toplevel(self, bounds, border=0, klass=None, params={}):
+        return self.create_window(bounds,
+            border=border,
+            klass=klass,
+            parent=self.root_window,
+            params=params)
+
+    def create_window(self, bounds, border=0, klass=None, parent=0, params={}):
         wid = self._conn.new_xid()
         root = self.root
         self.raw.CreateWindow(**{
             'wid': wid,
             'root': root['root'],
             'depth': 0,
-            'parent': root['root'],
+            'parent': parent or root['root'],
             'visual': 0,
             'x': bounds.x,
             'y': bounds.y,

@@ -80,6 +80,7 @@ class Bar(object):
             self.cairo.save()
             self.cairo.rectangle(l, 0, r-l, self.height)
             self.cairo.clip()
+            self.cairo.new_path()
             l, r = i.draw(self.cairo, l, r)
             self.cairo.restore()
         self.xcore.raw.PutImage(
