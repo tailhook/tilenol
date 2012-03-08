@@ -2,10 +2,11 @@ import struct
 
 from zorro.di import di, dependency, has_dependencies
 
-from .base import Widget, Padding
+from .base import Widget
 from tilenol.xcb import Core, Rectangle
 from tilenol.events import EventDispatcher
 from tilenol.window import ClientMessageWindow, Window, Rectangle
+from tilenol.theme import Theme
 
 
 class TrayIcon(Window):
@@ -20,17 +21,15 @@ class Systray(Widget):
 
     xcore = dependency(Core, 'xcore')
     dispatcher = dependency(EventDispatcher, 'event-dispatcher')
+    theme = dependency(Theme, 'theme')
 
-    def __init__(self, *,
-        padding=Padding(2, 2, 2, 2),
-        spacing=2,
-        right=False):
+    def __init__(self, *, right=False):
         super().__init__(right=right)
-        self.padding = padding
-        self.spacing = spacing
         self.icons = []
 
     def __zorro_di_done__(self):
+        self.padding = self.theme.bar.box_padding
+        self.spacing = self.theme.bar.icon_spacing
         self.create_window()
 
     def create_window(self):
@@ -71,7 +70,7 @@ class Systray(Widget):
             win.systray = self
             win.reparent_to(self.bar.window)
             self.xcore.raw.ChangeWindowAttributes(window=win, params={
-                self.xcore.CW.BackPixel: 0x000000,
+                self.xcore.CW.BackPixel: self.theme.bar.background,
             })
             self.icons.append(win)
             win.show()

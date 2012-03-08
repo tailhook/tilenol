@@ -9,6 +9,7 @@ from .icccm import SizeHints
 from .commands import CommandDispatcher
 from .ewmh import Ewmh
 from .event import Event
+from .theme import Theme
 
 
 log = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ class Window(object):
 
     xcore = dependency(Core, 'xcore')
     ewmh = dependency(Ewmh, 'ewmh')
+    theme = dependency(Theme, 'theme')
 
     floating = None
     border_width = 0
@@ -189,8 +191,8 @@ class Window(object):
             Rectangle(s.x, s.y, s.width, s.height),
             klass=self.xcore.WindowClass.InputOutput,
             params={
-                self.xcore.CW.BackPixel: 0x000000,
-                self.xcore.CW.BorderPixel: 0x808080,
+                self.xcore.CW.BackPixel: self.theme.window.background,
+                self.xcore.CW.BorderPixel: self.theme.window.inactive_border,
                 self.xcore.CW.OverrideRedirect: True,
                 self.xcore.CW.EventMask:
                     self.xcore.EventMask.SubstructureRedirect
@@ -200,7 +202,7 @@ class Window(object):
                     | self.xcore.EventMask.FocusChange
             }), self))
         self.xcore.raw.ConfigureWindow(window=self.frame, params={
-                self.xcore.ConfigWindow.BorderWidth: 2,
+                self.xcore.ConfigWindow.BorderWidth: self.frame.border_width,
             })
         return self.frame
 
@@ -350,11 +352,14 @@ class ClientMessageWindow(Window):
 class Frame(Window):
 
     commander = dependency(CommandDispatcher, 'commander')
+    theme = dependency(Theme, 'theme')
 
     def __init__(self, wid, content):
         super().__init__(wid)
         self.content = content
-        self.border_width = 2
+
+    def __zorro_di_done__(self):
+        self.border_width = self.theme.window.border_width
 
     def focus(self):
         self.done.focus = True
@@ -370,7 +375,7 @@ class Frame(Window):
         assert self.commander.get('window') in (self.content, None)
         self.commander.pop('window', None)
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
-            self.xcore.CW.BorderPixel: 0x808080,
+            self.xcore.CW.BorderPixel: self.theme.window.inactive_border,
         })
 
     def focus_in(self):
@@ -379,7 +384,7 @@ class Frame(Window):
         assert self.commander.get('window') in (self.content, None)
         self.commander['window'] = self.content
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
-            self.xcore.CW.BorderPixel: 0x0000FF,
+            self.xcore.CW.BorderPixel: self.theme.window.active_border,
         })
 
     def destroyed(self):

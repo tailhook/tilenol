@@ -8,6 +8,7 @@ from tilenol.screen import ScreenManager
 from tilenol.window import DisplayWindow
 from tilenol.events import EventDispatcher
 from tilenol.event import Event
+from tilenol.theme import Theme
 
 
 @has_dependencies
@@ -16,26 +17,23 @@ class Bar(object):
     xcore = dependency(Core, 'xcore')
     screenman = dependency(ScreenManager, 'screen-manager')
     dispatcher = dependency(EventDispatcher, 'event-dispatcher')
+    theme = dependency(Theme, 'theme')
 
 
-    def __init__(self, widgets,
-                 screen_no=0,
-                 height=24,
-                 background=cairo.SolidPattern(0, 0, 0),
-                 ):
+    def __init__(self, widgets, screen_no=0):
         self.widgets = widgets
         self.screen_no = screen_no
-        self.height = height
-        self.background = background
-        for w in widgets:
-            w.height = self.height
         self.redraw = Event('bar.redraw')
         self.redraw.listen(self.expose)
 
     def __zorro_di_done__(self):
+        bar = self.theme.bar
+        self.height = bar.height
+        self.background = bar.background_pat
         inj = di(self).clone()
         inj['bar'] = self
         for w in self.widgets:
+            w.height = self.height
             inj.inject(w)
         scr = self.screenman.screens[self.screen_no]
         scr.add_top_bar(self)

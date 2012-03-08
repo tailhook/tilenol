@@ -18,6 +18,7 @@ from .config import Config
 from .groups import Group, GroupManager
 from .screen import ScreenManager
 from .classify import Classifier
+from .theme import Theme
 
 
 log = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ class Tilenol(object):
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
         inj['config'] = inj.inject(Config())
+        inj['theme'] = inj.inject(Theme())
         # TODO(tailhook) query xinerama screens
         inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
             xcore.root['width_in_pixels'], xcore.root['height_in_pixels'])])

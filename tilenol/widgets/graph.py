@@ -2,26 +2,30 @@ import time
 
 import cairo
 from zorro import gethub, sleep
+from zorro.di import has_dependencies, dependency
 
-from .base import Widget, Padding
+from .base import Widget
+from tilenol.theme import Theme
 
 
+@has_dependencies
 class _Graph(Widget):
     fixed_upper_bound = False
 
-    def __init__(self,
-            samples=60,
-            right=False):
+    theme = dependency(Theme, 'theme')
+
+    def __init__(self, samples=60, right=False):
         super().__init__(right=right)
         self.samples = samples
         self.values = [0]*self.samples
         self.maxvalue = 0
-        self.padding = Padding(2, 2, 2, 2)
-        self.graph_color = cairo.SolidPattern(0.3, 0.3, 0.6)
-        self.fill_color = cairo.SolidPattern(0.1, 0.1, 0.2)
-        self.line_width = 2
 
     def __zorro_di_done__(self):
+        bar = self.theme.bar
+        self.padding = bar.box_padding
+        self.graph_color = bar.graph_color_pat
+        self.fill_color = bar.graph_fill_color_pat
+        self.line_width = bar.graph_line_width
         gethub().do_spawnhelper(self._update_handler)
 
     def _update_handler(self):

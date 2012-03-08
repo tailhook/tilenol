@@ -5,26 +5,24 @@ from zorro.di import dependency, has_dependencies
 from zorro import gethub, sleep
 from cairo import SolidPattern
 
-from  .base import Widget, Padding
+from  .base import Widget
+from tilenol.theme import Theme
 
 
+@has_dependencies
 class Clock(Widget):
 
-    def __init__(self, *,
-            font_face="Consolas",
-            font_size=18,
-            color=SolidPattern(1, 1, 1),
-            format="%H:%M:%S %d.%m.%Y",
-            padding=Padding(2, 4, 8, 4),
-            right=False):
+    theme = dependency(Theme, 'theme')
+
+    def __init__(self, *, format="%H:%M:%S %d.%m.%Y", right=False):
         super().__init__(right=right)
-        self.font_face = font_face
-        self.font_size = font_size
-        self.color = color
-        self.padding = padding
         self.format = format
 
     def __zorro_di_done__(self):
+        bar = self.theme.bar
+        self.font = bar.font
+        self.color = bar.text_color_pat
+        self.padding = bar.text_padding
         gethub().do_spawnhelper(self._update_time)
 
     def _update_time(self):
@@ -39,8 +37,7 @@ class Clock(Widget):
         return datetime.datetime.now().strftime(self.format)
 
     def draw(self, canvas, l, r):
-        canvas.select_font_face(self.font_face)
-        canvas.set_font_size(self.font_size)
+        self.font.apply(canvas)
         canvas.set_source(self.color)
         tm = self._time()
         _, _, w, h, _, _ = canvas.text_extents(tm)

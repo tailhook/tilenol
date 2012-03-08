@@ -5,9 +5,7 @@ from cairo import SolidPattern
 from zorro.di import has_dependencies, dependency
 
 from .bar import Bar
-
-
-Padding = namedtuple('Padding', 'top right bottom left')
+from tilenol.theme import Theme
 
 
 @has_dependencies
@@ -23,17 +21,16 @@ class Widget(metaclass=ABCMeta):
         return left, right
 
 
+@has_dependencies
 class Sep(Widget):
 
-    def __init__(self,
-            padding=Padding(2, 2, 2, 2),
-            color=SolidPattern(0.5, 0.5, 0.5),
-            line_width=1,
-            right=False):
-        super().__init__(right=right)
-        self.padding = padding
-        self.color = color
-        self.line_width = line_width
+    theme = dependency(Theme, 'theme')
+
+    def __zorro_di_done__(self):
+        bar = self.theme.bar
+        self.padding = bar.box_padding
+        self.color = bar.separator_color_pat
+        self.line_width = bar.separator_width
 
     def draw(self, canvas, l, r):
         if self.right:

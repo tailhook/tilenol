@@ -1,27 +1,30 @@
 import os.path
-from cairo import SolidPattern
 
-from  .base import Widget, Padding
+from cairo import SolidPattern
+from zorro.di import has_dependencies, dependency
+
+from  .base import Widget
+from tilenol.theme import Theme
 
 
 BATTERY_PATH = '/sys/class/power_supply'
 
 
+@has_dependencies
 class Battery(Widget):
 
-    def __init__(self, *,
-            which="BAT0",
-            font_face="Consolas",
-            font_size=18,
-            color=SolidPattern(1, 1, 1),
-            padding=Padding(2, 4, 8, 4),
-            right=False):
+    theme = dependency(Theme, 'theme')
+
+    def __init__(self, *, which="BAT0", right=False):
         super().__init__(right=right)
-        self.font_face = font_face
-        self.font_size = font_size
-        self.color = color
-        self.padding = padding
-        self.path = os.path.join(BATTERY_PATH, which)
+        self.which = which
+
+    def __zorro_di_done__(self):
+        bar = self.theme.bar
+        self.font = bar.font
+        self.color = bar.text_color_pat
+        self.padding = bar.text_padding
+        self.path = os.path.join(BATTERY_PATH, self.which)
 
     def get_file(self, name):
         with open(os.path.join(self.path, name), 'rt') as f:
@@ -45,8 +48,7 @@ class Battery(Widget):
             min = int(now/power*60) % 60
             txt = '{:.0%} - {:02d}:{:02d}'.format(perc, hour, min)
 
-        canvas.select_font_face(self.font_face)
-        canvas.set_font_size(self.font_size)
+        self.font.apply(canvas)
         canvas.set_source(self.color)
         _, _, w, h, _, _ = canvas.text_extents(txt)
         if self.right:

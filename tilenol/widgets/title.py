@@ -4,28 +4,22 @@ from zorro.di import di, has_dependencies, dependency
 from cairo import SolidPattern
 import cairo
 
-from .base import Widget, Padding
+from .base import Widget
 from tilenol.commands import CommandDispatcher
+from tilenol.theme import Theme
 
 
 @has_dependencies
 class Title(Widget):
 
     dispatcher = dependency(CommandDispatcher, 'commander')
-
-    def __init__(self, *,
-            font_face="Consolas",
-            font_size=18,
-            color=SolidPattern(1, 1, 1),
-            padding=Padding(2, 4, 7, 4),
-            right=False):
-        super().__init__(right=right)
-        self.font_face = font_face
-        self.font_size = font_size
-        self.color = color
-        self.padding = padding
+    theme = dependency(Theme, 'theme')
 
     def __zorro_di_done__(self):
+        bar = self.theme.bar
+        self.color = bar.text_color_pat
+        self.font = bar.font
+        self.padding = bar.text_padding
         self.dispatcher.events['window'].listen(self.window_changed)
         self.oldwin = None
 
@@ -43,8 +37,7 @@ class Title(Widget):
         if not win:
             return r, r
         canvas.set_source(self.color)
-        canvas.select_font_face(self.font_face)
-        canvas.set_font_size(self.font_size)
+        self.font.apply(canvas)
         canvas.move_to(l + self.padding.left,
                        self.height - self.padding.bottom)
         canvas.show_text(win.props.get('_NET_WM_NAME')
@@ -56,14 +49,10 @@ class Title(Widget):
 class Icon(Widget):
 
     dispatcher = dependency(CommandDispatcher, 'commander')
-
-    def __init__(self, *,
-            padding=Padding(2, 2, 2, 2),
-            right=False):
-        super().__init__(right=right)
-        self.padding = padding
+    theme = dependency(Theme, 'theme')
 
     def __zorro_di_done__(self):
+        self.padding = self.theme.bar.box_padding
         self.dispatcher.events['window'].listen(self.window_changed)
         self.oldwin = None
 
