@@ -54,9 +54,11 @@ class Tilenol(object):
         keys.register_keys(self.root_window)
 
     def run(self):
-
         proto = Proto()
         proto.load_xml('xproto')
+        proto.load_xml('xinerama')
+        proto.load_xml('shm')
+        proto.load_xml('bigreq')
         self.conn = conn = Connection(proto)
         conn.connection()
         self.root_window = Window(conn.init_data['roots'][0]['root'])
@@ -67,9 +69,15 @@ class Tilenol(object):
         keysyms.load_default()
         inj['config'] = inj.inject(Config())
         inj['theme'] = inj.inject(Theme())
-        # TODO(tailhook) query xinerama screens
-        inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
-            xcore.root['width_in_pixels'], xcore.root['height_in_pixels'])])
+        if hasattr(xcore, 'xinerama'):
+            info = xcore.xinerama.QueryScreens()['screen_info']
+            inj['screen-manager'] = ScreenManager([
+                Rectangle(scr['x_org'], scr['y_org'],
+                    scr['width'], scr['height'])
+                for scr in info])
+        else:
+            inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
+                xcore.root['width_in_pixels'], xcore.root['height_in_pixels'])])
 
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()

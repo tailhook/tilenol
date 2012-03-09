@@ -18,11 +18,13 @@ class TestTile(unittest.TestCase):
         lay = Tile()
         lay.set_bounds(Rectangle(0, 0, 800, 600))
         w1 = mock.Mock()
+        w1.lprops.stack = None
         lay.add(w1)
         lay.layout()
         w1.set_bounds.assert_called_with(Rectangle(0, 0, 800, 600))
         w1.reset_mock()
         w2 = mock.Mock()
+        w2.lprops.stack = None
         lay.add(w2)
         lay.layout()
         w1.set_bounds.assert_called_with(Rectangle(0, 0, 600, 600))
@@ -30,6 +32,7 @@ class TestTile(unittest.TestCase):
         w1.reset_mock()
         w2.reset_mock()
         w3 = mock.Mock()
+        w3.lprops.stack = None
         lay.add(w3)
         lay.layout()
         w1.set_bounds.assert_called_with(Rectangle(0, 0, 600, 600))

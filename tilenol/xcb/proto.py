@@ -128,7 +128,7 @@ class Channel(channel.PipelinedReqChannel):
             fut.set(value)
         else:
             assert value[0] == 0
-            typ = self.proto.errors_by_num[value[1]]
+            typ = self.proto.subprotos['xproto'].errors_by_num[value[1]]
             err, pos = typ.read_from(value, 6)
             assert len(value) == max(pos, 30)
             lst = traceback.format_list(tb)
@@ -252,7 +252,8 @@ class Connection(object):
                                    proto=self.proto,
                                    event_dispatcher=self.event_dispatcher)
                     data = chan.connect(self.auth_type, self.auth_key)
-                    value, pos = self.proto.types['Setup'].read_from(data)
+                    core = self.proto.subprotos['xproto']
+                    value, pos = core.types['Setup'].read_from(data)
                     assert pos == len(data)
                     self.init_data = value
                     assert self.init_data['status'] == 1
@@ -274,14 +275,24 @@ class Connection(object):
         assert len(buf) == max(pos, 30), (len(buf), pos, buf)
         raise XError(typ, err)
 
-    def do_request(self, rtype, **kw):
+    def do_request(self, rtype, *, _opcode=None, **kw):
         conn = self.connection()
         for i in list(kw):
             n = i + '_len'
             if n in rtype.items and n not in kw:
                 kw[n] = len(kw[i])
+
         buf = bytearray()
         rtype.write_to(buf, kw)
+        ln = int(ceil((len(buf)+3)/4))
+        if _opcode is None:
+            buf.insert(0, rtype.opcode)
+        else:
+            buf.insert(0, _opcode)
+            buf.insert(1, rtype.opcode)
+        buf[2:2] = struct.pack('<H', ln)
+        buf += b'\x00'*(ln*4 - len(buf))
+
         if rtype.reply:
             buf = conn.request(buf).get()
             if buf[0] == 0:
@@ -297,7 +308,7 @@ class Connection(object):
         return next(self.xid_generator)
 
     def event_dispatcher(self, seq, buf):
-        etype = self.proto.events_by_num[buf[0] & 127]
+        etype = self.proto.subprotos['xproto'].events_by_num[buf[0] & 127]
         ev, pos = etype.read_from(buf, 1)
         assert pos < 32
         self.events.append(etype.type(seq, **ev))

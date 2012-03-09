@@ -117,14 +117,6 @@ class Request(Struct):
     def clone(self, name, opcode):
         return self.__class__(name, opcode, self.items)
 
-    def write_to(self, buf, value):
-        super().write_to(buf, value)
-        assert len(buf) > 1
-        ln = int(ceil((len(buf)+3)/4))
-        buf.insert(0, self.opcode)
-        buf[2:2] = struct.pack('<H', ln)
-        buf += b'\x00'*(ln*4 - len(buf))
-
 
 class Error(Struct):
 
@@ -221,14 +213,36 @@ class Proto(object):
 
     def __init__(self, path=path):
         self.path = path
+        self.subprotos = {}
+
+    def load_xml(self, name):
+        with open(os.path.join(self.path, name + '.xml'), 'rb') as f:
+            xml = parse(f)
+        self.subprotos[name] = Subprotocol(self, xml)
+
+
+class Subprotocol(object):
+
+    def __init__(self, parent, xml):
+        self.parent = parent
         self.types = {}
+        self.type_lookup = [self.types]
         self.enums = {}
         self.events = {}
         self.events_by_num = {}
         self.errors = {}
+        self.error_lookup = [self.errors]
         self.errors_by_num = {}
         self.requests = {}
+        root = xml.getroot()
+        self.extension = bool(root.attrib.get('extension-name'))
+        if self.extension:
+            self.xname = root.attrib['extension-xname']
+            self.major_version = root.attrib['major-version']
+            self.minor_version = root.attrib['minor-version']
         self.simple_types()
+        for el in xml.iterfind('*'):
+            getattr(self, '_parse_' + el.tag)(el)
 
     def add_type(self, typ):
         assert typ.name not in self.types
@@ -245,17 +259,24 @@ class Proto(object):
         self.add_type(Simple('INT16', 'h'))
         self.add_type(Simple('INT32', 'l'))
 
-    def load_xml(self, name):
-        with open(os.path.join(self.path, name + '.xml'), 'rb') as f:
-            xml = parse(f)
-        for el in xml.iterfind('*'):
-            getattr(self, '_parse_' + el.tag)(el)
+    def get_type(self, name):
+        for i in self.type_lookup:
+            if name in i:
+                return i[name]
+
+    def _parse_import(self, el):
+        if el.text not in self.parent.subprotos:
+            self.parent.load_xml(el.text)
+        pro = self.parent.subprotos[el.text]
+        self.type_lookup.append(pro.types)
+        self.error_lookup.append(pro.errors)
 
     def _parse_items(self, el):
         items = OrderedDict()
         for field in el.iterfind('*'):
             if field.tag == 'field':
-                items[field.attrib['name']] = self.types[field.attrib['type']]
+                items[field.attrib['name']] = self.get_type(
+                    field.attrib['type'])
             elif field.tag == 'pad':
                 items[len(items)] = Simple(len(items),
                     '{}x'.format(field.attrib['bytes']))
@@ -270,12 +291,13 @@ class Proto(object):
                 elif field.attrib['type'] == 'void':
                     typ = Bytes(code)
                 else:
-                    typ = List(code, self.types[field.attrib['type']])
+                    typ = List(code, self.get_type(field.attrib['type']))
                 items[field.attrib['name']] = typ
             elif field.tag == 'valueparam':
                 name = field.attrib['value-mask-name']
                 if name not in items:
-                    items[name] = self.types[field.attrib['value-mask-type']]
+                    items[name] = self.get_type(
+                        field.attrib['value-mask-type'])
                 items['params'] = Params(field.attrib['value-list-name'], name)
             elif field.tag == 'exprfield':
                 print(field.tag)
@@ -309,7 +331,10 @@ class Proto(object):
         self.events_by_num[ner.number] = ner
 
     def _parse_errorcopy(self, el):
-        er = self.errors[el.attrib['ref']]
+        ref = el.attrib['ref']
+        for i in self.error_lookup:
+            if ref in i:
+                er = i[ref]
         ner = er.clone(el.attrib['name'], int(el.attrib['number']))
         self.errors[ner.name] = ner
         self.errors_by_num[ner.number] = ner
@@ -349,7 +374,8 @@ class Proto(object):
         self.add_type(Xid(el.attrib['name']))
 
     def _parse_typedef(self, el):
-        self.add_type(self.types[el.attrib['oldname']].clone(el.attrib['newname']))
+        self.add_type(self.get_type(el.attrib['oldname'])
+                      .clone(el.attrib['newname']))
 
     def _parse_enum(self, el):
         items = OrderedDict()

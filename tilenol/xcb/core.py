@@ -79,11 +79,14 @@ class EnumWrapper(object):
 
 class RawWrapper(object):
 
-    def __init__(self, conn):
+    def __init__(self, conn, proto, opcode=None):
         self._conn = conn
+        self._proto = proto
+        self._opcode = opcode
 
     def __getattr__(self, name):
-        return partial(self._conn.do_request, self._conn.proto.requests[name])
+        return partial(self._conn.do_request,
+            self._proto.requests[name], _opcode=self._opcode)
 
 
 class Core(object):
@@ -91,11 +94,18 @@ class Core(object):
     def __init__(self, connection):
         self._conn = connection
         self._conn.connection()
-        self.proto = connection.proto
+        self.proto = connection.proto.subprotos['xproto']
         self.atom = AtomWrapper(connection, self.proto)
-        self.raw = RawWrapper(connection)
+        self.raw = RawWrapper(connection, self.proto)
         for k, lst in self.proto.enums.items():
             setattr(self, k, EnumWrapper(lst))
+        for k, v in connection.proto.subprotos.items():
+            if not v.extension:
+                continue
+            ext = self.raw.QueryExtension(name=v.xname)
+            if not ext['present']:
+                continue
+            setattr(self, k, RawWrapper(self._conn, v, ext['major_opcode']))
         self.root = self._conn.init_data['roots'][0]
         self.root_window = self.root['root']
         pad = self._conn.init_data['bitmap_format_scanline_pad']

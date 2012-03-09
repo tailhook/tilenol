@@ -33,20 +33,22 @@ class TestConn(unittest.TestCase):
 
     @xcbtest('xproto')
     def testAtom(self, conn):
-        a1 = conn.do_request(conn.proto.requests['InternAtom'],
+        xproto = conn.proto.subprotos['xproto']
+        a1 = conn.do_request(xproto.requests['InternAtom'],
             only_if_exists=False, name="_ZXCB")['atom']
         self.assertTrue(a1 > 100)
         self.assertTrue(isinstance(a1, int))
-        a2 = conn.do_request(conn.proto.requests['InternAtom'],
+        a2 = conn.do_request(xproto.requests['InternAtom'],
             only_if_exists=True, name="WM_CLASS")['atom']
         self.assertEqual(a2, 67)
         self.assertNotEqual(a1, a2)
 
     @xcbtest('xproto')
     def testMoreAtoms(self, conn):
+        xproto = conn.proto.subprotos['xproto']
         totalatom = "TESTTESTTESTTESTTEST"
         for i in range(1, len(totalatom)):
-            n = conn.do_request(conn.proto.requests['InternAtom'],
+            n = conn.do_request(xproto.requests['InternAtom'],
                 only_if_exists=False, name=totalatom[:i])['atom']
             self.assertTrue(n > 200)
             self.assertTrue(isinstance(n, int))
