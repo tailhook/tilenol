@@ -36,7 +36,7 @@ class Drag(object):
                         )
                 else:
                     txt += '\n{} cols'.format((sz.width - bw)//hints.width_inc)
-            else:
+            elif hasattr(hints, 'height_inc'):
                 txt += '\n{} rows'.format((sz.height - bh)//hints.height_inc)
         self.hint.set_text(txt)
         hsz = self.hint.done.size
