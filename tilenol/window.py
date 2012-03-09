@@ -515,26 +515,26 @@ class Frame(Window):
 
 
     def _apply_hints(self, width, height, hints):
-        if hasattr(hints, 'max_width') and width < hints.min_width:
-            width = hints.min_width
-        elif hasattr(hints, 'max_height') and width > hints.max_width:
-            width = hints.max_width
-        elif hasattr(hints, 'width_inc'):
+        if hasattr(hints, 'width_inc'):
             incr = hints.width_inc
             base = getattr(hints, 'base_width',
                            getattr(hints, 'min_width', None))
             n = (width - base)//incr
             width = base + n*incr
-        if hasattr(hints, 'max_height') and height < hints.min_height:
-            height = hints.min_height
-        elif hasattr(hints, 'max_height') and height > hints.max_height:
-            height = hints.max_height
-        elif hasattr(hints, 'height_inc'):
+        if hasattr(hints, 'min_width') and width < hints.min_width:
+            width = hints.min_width
+        elif hasattr(hints, 'max_width') and width > hints.max_width:
+            width = hints.max_width
+        if hasattr(hints, 'height_inc'):
             incr = hints.height_inc
             base = getattr(hints, 'base_height',
                            getattr(hints, 'min_height', None))
             n = (height - base)//incr
             height = base + n*incr
+        if hasattr(hints, 'min_height') and height < hints.min_height:
+            height = hints.min_height
+        elif hasattr(hints, 'max_height') and height > hints.max_height:
+            height = hints.max_height
         # TODO(tailhook) obey aspect ratio
         return width, height
 

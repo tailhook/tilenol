@@ -33,8 +33,8 @@ class SizeHints(object):
             hints.min_width = arr[5]
             hints.min_height = arr[6]
         if flags & PMaxSize:
-            hints.min_width = arr[7]
-            hints.min_height = arr[8]
+            hints.max_width = arr[7]
+            hints.max_height = arr[8]
         if flags & PResizeInc:
             hints.width_inc = arr[9]
             hints.height_inc = arr[10]
