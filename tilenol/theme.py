@@ -38,6 +38,7 @@ class Theme(SubTheme):
         blue = 0x4c4c99
         dark_blue = 0x191933
         gray = 0x808080
+        red = 0x994c4c
         black = 0x000000
         white = 0xffffff
 
@@ -56,6 +57,8 @@ class Theme(SubTheme):
         self.bar.set_color('text_color', white)
         self.bar.set_color('dim_color', gray)
         self.bar.set_color('active_border', blue)
+        self.bar.set_color('subactive_border', gray)
+        self.bar.set_color('urgent_border', red)
         self.bar.border_width = 2
         self.bar.height = 24
         self.bar.set_color('graph_color', blue)

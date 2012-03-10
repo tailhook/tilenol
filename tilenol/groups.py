@@ -13,48 +13,61 @@ class GroupManager(object):
 
     def __init__(self, groups):
         self.groups = list(groups)
-        self.current_group = self.groups[0]
         self.by_name = {g.name: g for g in self.groups}
         self.group_changed = Event('group-manager.group_changed')
         self.window_added = Event('group-manager.window_added')
-
 
     def __zorro_di_done__(self):
         # TODO(tailhook) implement several screens
         for g in self.groups:
             di(self).inject(g)
-        scr = self.screenman.screens[0]
-        self.bounds = scr.inner_bounds
-        self.commander['group'] = self.current_group
-        self.commander['layout'] = self.current_group.current_layout
-        self.current_group.set_bounds(self.bounds)
-        self.current_group.show()
-        self.screenman.screens[0].add_listener(self.update_screen)
-
-    def update_screen(self, screen):
-        self.bounds = screen.inner_bounds
-        self.current_group.set_bounds(self.bounds)
+        self.current_groups = {}
+        for i, s in enumerate(self.screenman.screens):
+            gr = self.groups[i]
+            self.current_groups[s] = gr
+            gr.screen = s
+            s.group = gr
+            gr.set_bounds(s.inner_bounds)
+            gr.show()
+            if i == 0:
+                self.commander['group'] = gr
+                self.commander['screen'] = s
+                self.commander['layout'] = g.current_layout
 
     def add_window(self, win):
         if(isinstance(win.lprops.group, int)
            and win.lprops.group < len(self.groups)):
             ngr = self.groups[win.lprops.group]
+        elif 'group' in self.commander:
+            ngr = self.commander['group']
         else:
-            ngr = self.current_group
+            ngr = self.current_groups[self.screenman.screens[0]]
         ngr.add_window(win)
         win.lprops.group = self.groups.index(ngr)
         self.window_added.emit()
 
     def cmd_switch(self, name):
         ngr = self.by_name[name]
-        if ngr is self.current_group:
+        ogr = self.commander['group']
+        if ngr is ogr:
             return
-        self.current_group.hide()
-        self.current_group = ngr
-        self.current_group.set_bounds(self.bounds)
-        ngr.show()
-        self.commander['group'] = self.current_group
-        self.commander['layout'] = self.current_group.current_layout
+        if ngr in self.current_groups.values():
+            ogr.screen, ngr.screen = ngr.screen, ogr.screen
+            self.current_groups[ngr.screen] = ngr
+            self.current_groups[ogr.screen] = ogr
+            ngr.set_bounds(ngr.screen.inner_bounds)
+            ogr.set_bounds(ogr.screen.inner_bounds)
+        else:
+            ogr.hide()
+            s = ogr.screen
+            del ogr.screen
+            self.current_groups[s] = ngr
+            ngr.screen = s
+            ngr.set_bounds(s.inner_bounds)
+            ngr.show()
+        self.commander['group'] = ngr
+        self.commander['layout'] = ngr.current_layout
+        self.commander['screen'] = ngr.screen
         self.group_changed.emit()
 
     def cmd_move_window_to(self, name):

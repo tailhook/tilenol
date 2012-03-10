@@ -481,6 +481,9 @@ class Frame(Window):
         self.content.real.focus = True
         assert self.commander.get('window') in (self.content, None)
         self.commander['window'] = self.content
+        self.commander['group'] = self.content.group
+        self.commander['layout'] = self.content.group.current_layout
+        self.commander['screen'] = self.content.group.screen
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
             self.xcore.CW.BorderPixel: self.theme.window.active_border,
         })

@@ -3,6 +3,7 @@ from cairo import SolidPattern, LINE_JOIN_ROUND
 from zorro.di import dependency, has_dependencies
 
 from tilenol.groups import GroupManager
+from tilenol.commands import CommandDispatcher
 from .base import Widget
 from tilenol.theme import Theme
 
@@ -11,6 +12,7 @@ from tilenol.theme import Theme
 class Groupbox(Widget):
 
     gman = dependency(GroupManager, 'group-manager')
+    commander = dependency(CommandDispatcher, 'commander')
     theme = dependency(Theme, 'theme')
 
     def __init__(self, *, right=False):
@@ -22,6 +24,7 @@ class Groupbox(Widget):
         self.inactive_color = bar.dim_color_pat
         self.active_color = bar.text_color_pat
         self.selected_color = bar.active_border_pat
+        self.subactive_color = bar.subactive_border_pat
         self.padding = bar.text_padding
         self.border_width = bar.border_width
         self.gman.group_changed.listen(self.bar.redraw.emit)
@@ -43,8 +46,12 @@ class Groupbox(Widget):
             canvas.move_to(x + self.padding.left,
                            self.height - self.padding.bottom)
             canvas.show_text(g.name)
-            if self.gman.current_group is g:
+            if self.commander.get('group') is g:
                 canvas.set_source(self.selected_color)
+                canvas.rectangle(x + 2, 2, ax + between - 4, self.height - 4)
+                canvas.stroke()
+            elif g in self.gman.current_groups.values():
+                canvas.set_source(self.subactive_color)
                 canvas.rectangle(x + 2, 2, ax + between - 4, self.height - 4)
                 canvas.stroke()
             x += ax + between
