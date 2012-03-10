@@ -63,6 +63,8 @@ class EventDispatcher(object):
             win.want.visible = True
             if win.frame is None:
                 frm = win.create_frame()
+                print("win", win.want.size, win.done.size)
+                print("frm", frm.want.size, frm.done.size)
                 self.frames[frm.wid] = frm
                 self.all_windows[frm.wid] = frm
             win.reparent_frame()
@@ -142,6 +144,8 @@ class EventDispatcher(object):
             # TODO(tailhook) clean up old window
         if win.wid in self.all_windows:
             return
+        win.want.size = win.done.size = \
+            Rectangle(ev.x, ev.y, ev.width, ev.height)
         self.xcore.raw.ChangeWindowAttributes(window=win, params={
                 self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
             })

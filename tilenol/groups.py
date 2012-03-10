@@ -107,7 +107,7 @@ class Group(object):
         return not self.all_windows
 
     def add_window(self, win):
-        if win.floating:
+        if win.lprops.floating:
             # Ensure that floating windows are always above others
             win.frame.restack(win.xcore.StackMode.Above)
             self.floating_windows.append(win)

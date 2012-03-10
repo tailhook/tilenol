@@ -70,7 +70,6 @@ class Window(object):
     ewmh = dependency(Ewmh, 'ewmh')
     theme = dependency(Theme, 'theme')
 
-    floating = None
     border_width = 0
 
     def __init__(self, wid):
@@ -188,8 +187,10 @@ class Window(object):
 
     def create_frame(self):
         s = self.want.size
-        self.frame = di(self).inject(Frame(self.xcore.create_toplevel(
-            Rectangle(s.x, s.y, s.width, s.height),
+        if self.lprops.floating:
+            border_width = self.theme.window.border_width
+            s = s._replace(x=s.x - border_width, y=s.y - border_width)
+        self.frame = di(self).inject(Frame(self.xcore.create_toplevel(s,
             klass=self.xcore.WindowClass.InputOutput,
             params={
                 self.xcore.CW.BackPixel: self.theme.window.background,
@@ -202,6 +203,8 @@ class Window(object):
                     | self.xcore.EventMask.LeaveWindow
                     | self.xcore.EventMask.FocusChange
             }), self))
+        self.frame.want.size = s
+        self.frame.done.size = s
         self.xcore.raw.ConfigureWindow(window=self.frame, params={
                 self.xcore.ConfigWindow.BorderWidth: self.frame.border_width,
             })
@@ -234,7 +237,7 @@ class Window(object):
             if isinstance(value, tuple) and len(value) == 1:
                 value = value[0]
             super(LayoutProperties, self.lprops).__setattr__(
-                name[len('_TN_LP_'):], value)
+                name[len('_TN_LP_'):].lower(), value)
         elif name == '_NET_WM_ICON':
             icons = self.icons = []
             lst = list(value)
@@ -303,21 +306,21 @@ class Window(object):
         self.xcore.raw.KillClient(resource=self)
 
     def make_floating(self):
-        if self.floating:
+        if self.lprops.floating:
             return
         gr = self.group
         gr.remove_window(self)
-        self.floating = True
+        self.lprops.floating = True
         gr.add_window(self)
 
     cmd_make_floating = make_floating
 
     def make_tiled(self):
-        if not self.floating:
+        if not self.lprops.floating:
             return
         gr = self.group
         gr.remove_window(self)
-        self.floating = False
+        self.lprops.floating = False
         gr.add_window(self)
 
     cmd_make_tiled = make_tiled
@@ -461,7 +464,7 @@ class Frame(Window):
 
     def focus(self):
         self.done.focus = True
-        if self.content.floating:
+        if self.content.lprops.floating:
             self.restack(self.xcore.StackMode.TopIf)
         self.content.focus()
 

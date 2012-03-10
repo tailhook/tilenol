@@ -22,9 +22,9 @@ class Classifier(object):
             'NOTIFICATION',
             'TOOLBAR',
             'SPLASH',
-            ), set_property('floating', True))
+            ), set_lprop('floating', True))
         self.add_rule(ewmh.match_type('UTILITY'),
-                      set_property('floating', False),
+                      set_lprop('floating', False),
                       klass='Gimp')
         self.add_rule(match_role('gimp-toolbox'),
                       set_lprop('stack', 'left'),
@@ -33,10 +33,10 @@ class Classifier(object):
                       set_lprop('stack', 'right'),
                       klass='Gimp')
         self.add_rule(lambda w: True,
-                      set_property('floating', True),
+                      set_lprop('floating', True),
                       klass='VCLSalFrame')
         self.add_rule(lambda w: True,
-                      set_property('floating', False),
+                      set_lprop('floating', False),
                       klass='VCLSalFrame.DocumentWindow')
 
     def apply(self, win):

@@ -171,7 +171,7 @@ class MouseRegistry(object):
         if 'window' not in self.commander:
             return
         win = self.commander['window']
-        if not win.floating:
+        if not win.lprops.floating:
             win.make_floating()
         else:
             win.frame.restack(self.core.StackMode.TopIf)

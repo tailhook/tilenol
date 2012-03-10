@@ -11,42 +11,42 @@ class TestClassify(unittest.TestCase):
 
     def testFloat(self):
         win = mock.Mock()
-        win.floating = None
+        win.lprops.floating = None
         win.xcore.atom._NET_WM_WINDOW_TYPE_UTILITY = 123456
         win.props = {
             '_NET_WM_WINDOW_TYPE': (123, 123456),
             }
         self.cl.apply(win)
-        self.assertEqual(win.floating, True)
+        self.assertEqual(win.lprops.floating, True)
 
     def testNoFloat(self):
         win = mock.Mock()
-        win.floating = None
+        win.lprops.floating = None
         win.xcore.atom._NET_WM_WINDOW_TYPE_UTILITY = 123456
         win.props = {
             '_NET_WM_WINDOW_TYPE': (456,),
             }
         self.cl.apply(win)
-        self.assertEqual(win.floating, None)
+        self.assertEqual(win.lprops.floating, None)
 
     def testGimp(self):
         win = mock.Mock()
-        win.floating = None
+        win.lprops.floating = None
         win.xcore.atom._NET_WM_WINDOW_TYPE_UTILITY = 123456
         win.props = {
             '_NET_WM_WINDOW_TYPE': (123, 123456),
             'WM_CLASS': 'gimp\0Gimp\0',
             }
         self.cl.apply(win)
-        self.assertEqual(win.floating, False)
+        self.assertEqual(win.lprops.floating, False)
 
     def testGimp26(self):
         win = mock.Mock()
-        win.floating = None
+        win.lprops.floating = None
         win.xcore.atom._NET_WM_WINDOW_TYPE_UTILITY = 123456
         win.props = {
             '_NET_WM_WINDOW_TYPE': (123, 123456),
             'WM_CLASS': 'gimp-2.6\0Gimp-2.6\0',
             }
         self.cl.apply(win)
-        self.assertEqual(win.floating, False)
+        self.assertEqual(win.lprops.floating, False)
