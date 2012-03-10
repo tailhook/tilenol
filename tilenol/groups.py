@@ -72,12 +72,12 @@ class GroupManager(object):
 
     def cmd_move_window_to(self, name):
         ngr = self.by_name[name]
-        if ngr is self.current_group:
-            return
         if 'window' not in self.commander:
             return
         win = self.commander['window']
-        self.current_group.remove_window(win)
+        if ngr is win.group:
+            return
+        win.group.remove_window(win)
         win.hide()
         ngr.add_window(win)
         win.lprops.group = self.groups.index(ngr)
