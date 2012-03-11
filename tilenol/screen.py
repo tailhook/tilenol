@@ -30,6 +30,7 @@ class Screen(object):
         self.topbars = []
         self.bottombars = []
         self.updated = Event('screen.updated')
+        self.bars_visible = True
 
     def cmd_focus(self):
         self.group.focus()
@@ -37,15 +38,22 @@ class Screen(object):
     def set_bounds(self, rect):
         self.bounds = rect
         x, y, w, h = rect
-        for bar in self.topbars:
-            bar.set_bounds(Rectangle(x, y, w, bar.height))
-            y += bar.height
-            h -= bar.height
-        for bar in self.bottombars:
-            h -= bar.height
-            bar.set_bounds(Rectangle(x, y+h, w, bar.height))
+        if self.bars_visible:
+            for bar in self.topbars:
+                bar.set_bounds(Rectangle(x, y, w, bar.height))
+                y += bar.height
+                h -= bar.height
+            for bar in self.bottombars:
+                h -= bar.height
+                bar.set_bounds(Rectangle(x, y+h, w, bar.height))
         self.inner_bounds = Rectangle(x, y, w, h)
         self.updated.emit()
+
+    def all_bars(self):
+        for bar in self.topbars:
+            yield bar
+        for bar in self.bottombars:
+            yield bar
 
     def add_top_bar(self, bar):
         if bar not in self.topbars:
@@ -55,5 +63,24 @@ class Screen(object):
     def add_bottom_bar(self, bar):
         if bar not in self.bottombars:
             self.bottombars.append(bar)
+        self.set_bounds(self.bounds)
+
+    def cmd_toggle_bars(self):
+        if self.bars_visible:
+            self.cmd_hide_bars()
+        else:
+            self.cmd_show_bars()
+
+    def cmd_hide_bars(self):
+        for bar in self.all_bars():
+            bar.window.hide()
+        self.bars_visible = False
+        self.inner_bounds = self.bounds
+        self.updated.emit()
+
+    def cmd_show_bars(self):
+        for bar in self.all_bars():
+            bar.window.show()
+        self.bars_visible = True
         self.set_bounds(self.bounds)
 

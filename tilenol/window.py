@@ -205,9 +205,7 @@ class Window(object):
             }), self))
         self.frame.want.size = s
         self.frame.done.size = s
-        self.xcore.raw.ConfigureWindow(window=self.frame, params={
-                self.xcore.ConfigWindow.BorderWidth: self.frame.border_width,
-            })
+        self.frame.set_border(self.frame.border_width)
         return self.frame
 
     def update_property(self, atom):
@@ -330,6 +328,16 @@ class Window(object):
         self.xcore.raw.ConfigureWindow(window=self, params={
             self.xcore.ConfigWindow.StackMode: stack_mode,
             })
+
+    def set_border(self, width):
+        self.border_width = width
+        self.xcore.raw.ConfigureWindow(window=self, params={
+                self.xcore.ConfigWindow.BorderWidth: width,
+            })
+
+    def cmd_toggle_border(self):
+        if self.frame:
+            self.frame.toggle_border()
 
 
 class DisplayWindow(Window):
@@ -567,9 +575,14 @@ class Frame(Window):
                     | self.xcore.EventMask.LeaveWindow
                     | self.xcore.EventMask.FocusChange
             }), self))
-        self.xcore.raw.ConfigureWindow(window=res, params={
-            self.xcore.ConfigWindow.BorderWidth: self.theme.hint.border_width,
-            })
+        res.set_border(self.theme.hint.border_width)
         res.show()
         return res
+
+    def toggle_border(self):
+        if self.border_width == 0:
+            self.set_border(self.theme.window.border_width)
+        else:
+            self.set_border(0)
+
 
