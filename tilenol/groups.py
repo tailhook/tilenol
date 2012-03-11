@@ -16,6 +16,8 @@ class GroupManager(object):
         self.by_name = {g.name: g for g in self.groups}
         self.group_changed = Event('group-manager.group_changed')
         self.window_added = Event('group-manager.window_added')
+        for g in self.groups:
+            g.manager = self
 
     def __zorro_di_done__(self):
         # TODO(tailhook) implement several screens
@@ -101,6 +103,17 @@ class Group(object):
     @property
     def empty(self):
         return not self.all_windows
+
+    def focus(self):
+        all = list(self.current_layout.all_visible_windows())
+        all.extend(self.floating_windows)
+        if all:
+            all[0].focus()
+        else:
+            self.commander['layout'] = self.current_layout
+            self.commander['group'] = self
+            self.commander['screen'] = self.screen
+        self.manager.group_changed.emit()
 
     def add_window(self, win):
         if win.lprops.floating:

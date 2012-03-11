@@ -1,15 +1,27 @@
+from zorro.di import di, has_dependencies, dependency
+
 from tilenol.event import Event
 from .xcb import Rectangle
+from tilenol.commands import CommandDispatcher
 
 
+@has_dependencies
 class ScreenManager(object):
+
+    commander = dependency(CommandDispatcher, 'commander')
 
     def __init__(self, rectangles):
         self.screens = []
-        for rect in rectangles:
+        for i, rect in enumerate(rectangles):
             scr = Screen()
             scr.set_bounds(rect)
             self.screens.append(scr)
+
+    def __zorro_di_done__(self):
+        inj = di(self)
+        for i, scr in enumerate(self.screens):
+            inj.inject(scr)
+            self.commander['screen.{}'.format(i)] = scr
 
 
 class Screen(object):
@@ -18,6 +30,9 @@ class Screen(object):
         self.topbars = []
         self.bottombars = []
         self.updated = Event('screen.updated')
+
+    def cmd_focus(self):
+        self.group.focus()
 
     def set_bounds(self, rect):
         self.bounds = rect

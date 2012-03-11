@@ -69,6 +69,8 @@ class Tilenol(object):
         keysyms.load_default()
         cfg = inj['config'] = inj.inject(Config())
         inj['theme'] = inj.inject(cfg.theme())
+        inj['commander'] = cmd = inj.inject(CommandDispatcher())
+        cmd['env'] = EnvCommands()
         if hasattr(xcore, 'xinerama'):
             info = xcore.xinerama.QueryScreens()['screen_info']
             screenman = inj['screen-manager'] = ScreenManager([
@@ -79,9 +81,8 @@ class Tilenol(object):
             screenman = inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
                 xcore.root['width_in_pixels'],
                 xcore.root['height_in_pixels'])])
+        inj.inject(screenman)
 
-        inj['commander'] = cmd = inj.inject(CommandDispatcher())
-        cmd['env'] = EnvCommands()
         cmd['tilenol'] = self
         keys = KeyRegistry()
         inj['key-registry'] = inj.inject(keys)
