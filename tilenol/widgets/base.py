@@ -12,6 +12,7 @@ from tilenol.theme import Theme
 class Widget(metaclass=ABCMeta):
 
     bar = dependency(Bar, 'bar')
+    stretched = False
 
     def __init__(self, right=False):
         self.right = right

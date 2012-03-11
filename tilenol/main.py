@@ -67,17 +67,18 @@ class Tilenol(object):
         inj['xcore'] = xcore = Core(conn)
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
-        inj['config'] = inj.inject(Config())
-        inj['theme'] = inj.inject(Theme())
+        cfg = inj['config'] = inj.inject(Config())
+        inj['theme'] = inj.inject(cfg.theme())
         if hasattr(xcore, 'xinerama'):
             info = xcore.xinerama.QueryScreens()['screen_info']
-            inj['screen-manager'] = ScreenManager([
+            screenman = inj['screen-manager'] = ScreenManager([
                 Rectangle(scr['x_org'], scr['y_org'],
                     scr['width'], scr['height'])
                 for scr in info])
         else:
-            inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
-                xcore.root['width_in_pixels'], xcore.root['height_in_pixels'])])
+            screenman = inj['screen-manager'] = ScreenManager([Rectangle(0, 0,
+                xcore.root['width_in_pixels'],
+                xcore.root['height_in_pixels'])])
 
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
@@ -87,17 +88,7 @@ class Tilenol(object):
         mouse = MouseRegistry()
         inj['mouse-registry'] = inj.inject(mouse)
 
-        from .layout.examples import Tile, Max, InstantMsg, Gimp
-        gman = inj.inject(GroupManager(map(inj.inject, (
-                Group('1', Tile),
-                Group('2', Max),
-                Group('3', Tile),
-                Group('4', Tile),
-                Group('5', Tile),
-                Group('g', Gimp),
-                Group('i', InstantMsg),
-                Group('m', Max),
-            ))))
+        gman = inj.inject(GroupManager(map(inj.inject, cfg.groups())))
         cmd['groups'] = gman
         inj['group-manager'] = gman
         inj['classifier'] = inj.inject(Classifier())
@@ -114,26 +105,18 @@ class Tilenol(object):
         mouse.register_buttons(self.root_window)
         self.setup_events()
 
-        from .widgets import Bar, Groupbox, Clock, Sep, Systray, Title, Icon
-        from .widgets import CPUGraph, MemoryGraph, SwapGraph, Battery
-        self.bar = inj.inject(Bar([
-            Groupbox(),
-            Sep(),
-            Icon(),
-            Clock(right=True),
-            Sep(right=True),
-            Systray(right=True),
-            Sep(right=True),
-            CPUGraph(right=True),
-            MemoryGraph(right=True),
-            SwapGraph(right=True),
-            Battery(right=True),
-            Sep(right=True),
-            Title(),
-            ]))
-        self.bar.create_window()
-        self.catch_windows()
+        for screen_no, bar in cfg.bars():
+            inj.inject(bar)
+            if screen_no < len(screenman.screens):
+                scr = screenman.screens[screen_no]
+                if bar.position == 'bottom':
+                    scr.add_bottom_bar(bar)
+                else:
+                    scr.add_top_bar(bar)
+                bar.create_window()
+                scr.updated.listen(bar.redraw.emit)
 
+        self.catch_windows()
         signal.signal(signal.SIGCHLD, child_handler)
         signal.signal(signal.SIGQUIT, quit_handler)
         self.loop()

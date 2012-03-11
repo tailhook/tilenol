@@ -63,8 +63,6 @@ class EventDispatcher(object):
             win.want.visible = True
             if win.frame is None:
                 frm = win.create_frame()
-                print("win", win.want.size, win.done.size)
-                print("frm", frm.want.size, frm.done.size)
                 self.frames[frm.wid] = frm
                 self.all_windows[frm.wid] = frm
             win.reparent_frame()

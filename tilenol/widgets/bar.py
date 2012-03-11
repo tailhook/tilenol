@@ -4,7 +4,6 @@ import cairo
 from zorro.di import di, has_dependencies, dependency
 
 from tilenol.xcb import Core, Rectangle
-from tilenol.screen import ScreenManager
 from tilenol.window import DisplayWindow
 from tilenol.events import EventDispatcher
 from tilenol.event import Event
@@ -15,14 +14,15 @@ from tilenol.theme import Theme
 class Bar(object):
 
     xcore = dependency(Core, 'xcore')
-    screenman = dependency(ScreenManager, 'screen-manager')
     dispatcher = dependency(EventDispatcher, 'event-dispatcher')
     theme = dependency(Theme, 'theme')
 
 
-    def __init__(self, widgets, screen_no=0):
+    def __init__(self, widgets, position='top'):
         self.widgets = widgets
-        self.screen_no = screen_no
+        self.position = position
+        self.bounds = None
+        self.window = None
         self.redraw = Event('bar.redraw')
         self.redraw.listen(self.expose)
 
@@ -35,19 +35,17 @@ class Bar(object):
         for w in self.widgets:
             w.height = self.height
             inj.inject(w)
-        scr = self.screenman.screens[self.screen_no]
-        scr.add_top_bar(self)
-        scr.add_listener(self.update_screen)
-        self.update_screen(scr)
-        self.redraw.emit()
 
-    def update_screen(self, screen):
+    def set_bounds(self, rect):
+        self.bounds = rect
         # we have limit on the size of the bar until BIG-REQUESTS or SHM
-        self.width = min(screen.bounds.width, (1 << 16) // self.height)
+        self.width = min(rect.width, (1 << 16) // self.height)
         stride = self.xcore.bitmap_stride
         self.img = cairo.ImageSurface(cairo.FORMAT_ARGB32,
             int(ceil(self.width/stride)*stride), self.height)
         self.cairo = cairo.Context(self.img)
+        if self.window and not self.window.set_bounds(rect):
+            self.redraw.emit()
 
     def create_window(self):
         self._gc = self.xcore._conn.new_xid()  # TODO(tialhook) private api?
@@ -58,13 +56,13 @@ class Bar(object):
             )
         EM = self.xcore.EventMask
         CW = self.xcore.CW
-        self.window = DisplayWindow(self.xcore.create_toplevel(
-            Rectangle(0, 0, self.width, self.height),
+        self.window = DisplayWindow(self.xcore.create_toplevel(self.bounds,
             klass=self.xcore.WindowClass.InputOutput,
             params={
                 CW.EventMask: EM.Exposure | EM.SubstructureNotify,
                 CW.OverrideRedirect: True,
             }), self.expose)
+        self.window.want.size = self.bounds
         di(self).inject(self.window)
         self.dispatcher.register_window(self.window)
         self.window.show()

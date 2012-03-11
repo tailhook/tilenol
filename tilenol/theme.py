@@ -19,6 +19,31 @@ class SubTheme(object):
             (num & 0xff) / 255.0,
             ))
 
+    def update_from(self, dic):
+        for k, v in dic:
+            old = getattr(self, k, None)
+            if old is None:
+                return
+            if isinstance(old, int):
+                if hasattr(self, k+'_pat'):
+                    self.set_color(k, int(v))
+                else:
+                    setattr(self, k, int(v))
+            elif isinstance(old, Font):
+                if isinstance(v, (list, tuple)):
+                    f = Font(*v)
+                elif isinstance(v, str):
+                    f = Font(v, old.size)
+                elif isinstance(v, int):
+                    f = Font(old.face, v)
+                elif isinstance(v, dict):
+                    f = Font(**v)
+                else:
+                    raise NotImplemented("Invalid font {!r}".format(v))
+                setattr(self, k, f)
+            else:
+                setattr(self, k, v)
+
 
 class Font(object):
 
@@ -74,4 +99,12 @@ class Theme(SubTheme):
         self.hint.set_color('text_color', white)
         self.hint.border_width = 2
         self.hint.padding = Padding(5, 6, 9, 6)
+
+    def update_from(self, dic):
+        if 'window' in dic:
+            self.window.update_from(dic['window'])
+        if 'hint' in dic:
+            self.hint.update_from(dic['hint'])
+        if 'bar' in dic:
+            self.bar.update_from(dic['bar'])
 

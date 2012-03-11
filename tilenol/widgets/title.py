@@ -15,6 +15,8 @@ class Title(Widget):
     dispatcher = dependency(CommandDispatcher, 'commander')
     theme = dependency(Theme, 'theme')
 
+    stretched = True
+
     def __zorro_di_done__(self):
         bar = self.theme.bar
         self.color = bar.text_color_pat

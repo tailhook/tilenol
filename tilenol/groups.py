@@ -26,8 +26,6 @@ class GroupManager(object):
             gr = self.groups[i]
             self.current_groups[s] = gr
             gr.screen = s
-            s.group = gr
-            gr.set_bounds(s.inner_bounds)
             gr.show()
             if i == 0:
                 self.commander['group'] = gr
@@ -55,15 +53,12 @@ class GroupManager(object):
             ogr.screen, ngr.screen = ngr.screen, ogr.screen
             self.current_groups[ngr.screen] = ngr
             self.current_groups[ogr.screen] = ogr
-            ngr.set_bounds(ngr.screen.inner_bounds)
-            ogr.set_bounds(ogr.screen.inner_bounds)
         else:
             ogr.hide()
             s = ogr.screen
-            del ogr.screen
+            ogr.screen = None
             self.current_groups[s] = ngr
             ngr.screen = s
-            ngr.set_bounds(s.inner_bounds)
             ngr.show()
         self.commander['group'] = ngr
         self.commander['layout'] = ngr.current_layout
@@ -95,6 +90,7 @@ class Group(object):
         self.current_layout = layout_class()
         self.floating_windows = []
         self.all_windows = []
+        self._screen = None
 
     def __zorro_di_done__(self):
         di(self).inject(self.current_layout)
@@ -132,6 +128,23 @@ class Group(object):
         self.current_layout.hide()
         for win in self.floating_windows:
             win.hide()
+
+    @property
+    def screen(self):
+        return self._screen
+
+    @screen.setter
+    def screen(self, screen):
+        if self._screen:
+            self._screen.updated.unlisten(self.update_size)
+        self._screen = screen
+        if screen is not None:
+            screen.group = self
+            screen.updated.listen(self.update_size)
+            self.set_bounds(screen.inner_bounds)
+
+    def update_size(self):
+        self.set_bounds(self.screen.inner_bounds)
 
     def set_bounds(self, rect):
         self.current_layout.set_bounds(rect)
