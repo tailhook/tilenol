@@ -1,5 +1,6 @@
 from .tile import Split, Stack, TileStack
 
+
 class Tile(Split):
 
     class left(Stack):
@@ -22,22 +23,21 @@ class InstantMsg(Split):
     class left(TileStack): # or maybe not tiled ?
         weight = 3
 
-    class right(Stack):
+    class roster(Stack):
         limit = 1
         priority = 0  # probably roster created first
-        # TODO(tailhook) implement window role matching
 
 
 class Gimp(Split):
 
-    class left(Stack):
+    class toolbox(Stack):
         limit = 1
         weight = 1
 
-    class center(Stack):
+    class main(Stack):
         weight = 4
         priority = 0
 
-    class right(Stack):
+    class dock(Stack):
         limit = 1
         weight = 2

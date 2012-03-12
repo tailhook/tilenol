@@ -2,6 +2,7 @@ import os.path
 import shlex
 import re
 import logging
+from itertools import chain
 
 
 log = logging.getLogger(__name__)
@@ -146,4 +147,34 @@ class Config(object):
             bar = widgets.Bar( w, **binfo)
             yield sno, bar
 
-
+    def rules(self):
+        from tilenol.classify import all_conditions, all_actions
+        for cls, rules in chain(
+                self.config.get_config('rules', {}).items(),
+                self.data.get('rules', {}),
+                ):
+            if cls == 'global':
+                cls = None
+            for rule in rules:
+                cond = []
+                act = []
+                for k, v in rule.items():
+                    if isinstance(v, str):
+                        args = (v,)
+                        kw = {}
+                    elif isinstance(v, dict):
+                        args = {}
+                        kw = v
+                    else:
+                        args = v
+                        kw = {}
+                    if k in all_conditions:
+                        cond.append(all_conditions[k](*args, **kw))
+                    elif k in all_actions:
+                        act.append(all_actions[k](*args, **kw))
+                    else:
+                        raise NotImplementedError(k)
+                if not act:
+                    raise NotImplementedError("Empty actions {!r}"
+                                              .format(rule))
+                yield cls, cond, act

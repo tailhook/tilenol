@@ -189,7 +189,8 @@ class Window(object):
         s = self.want.size
         if self.lprops.floating:
             border_width = self.theme.window.border_width
-            s = s._replace(x=s.x - border_width, y=s.y - border_width)
+            s.x = s.x - border_width
+            s.y = s.y - border_width
         self.frame = di(self).inject(Frame(self.xcore.create_toplevel(s,
             klass=self.xcore.WindowClass.InputOutput,
             params={

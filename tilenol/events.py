@@ -142,8 +142,7 @@ class EventDispatcher(object):
             # TODO(tailhook) clean up old window
         if win.wid in self.all_windows:
             return
-        win.want.size = win.done.size = \
-            Rectangle(ev.x, ev.y, ev.width, ev.height)
+        win.done.size = win.want.size
         self.xcore.raw.ChangeWindowAttributes(window=win, params={
                 self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
             })

@@ -20,7 +20,7 @@ class Drag(object):
 
     def update_hint(self):
         sz = self.win.done.size
-        txt = '{}, {} {}x{}'.format(*sz)
+        txt = '{0.x}, {0.y} {0.width}x{0.height}'.format(sz)
         if hasattr(self.win, 'content'):
             hints = self.win.content.want.hints
         else:

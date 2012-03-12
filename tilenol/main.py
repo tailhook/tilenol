@@ -92,8 +92,11 @@ class Tilenol(object):
         gman = inj.inject(GroupManager(map(inj.inject, cfg.groups())))
         cmd['groups'] = gman
         inj['group-manager'] = gman
-        inj['classifier'] = inj.inject(Classifier())
-        inj['classifier'].default_rules()
+
+        rules = inj['classifier'] = inj.inject(Classifier())
+        for cls, cond, act in cfg.rules():
+            rules.add_rule(cond, act, klass=cls)
+
         inj['event-dispatcher'] = inj.inject(EventDispatcher())
         inj['ewmh'] = Ewmh()
         inj.inject(inj['ewmh'])

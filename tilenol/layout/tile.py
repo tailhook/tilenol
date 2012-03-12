@@ -179,8 +179,8 @@ class Split(Layout):
 
     def add(self, win):  # layout API
         if win.lprops.stack is not None:
-            s = self.stacks[win.lprops.stack]
-            if not s.full:
+            s = self.stacks.get(win.lprops.stack)
+            if s is not None and not s.full:
                 s.add(win)
                 return True
         for s in self.stacks.values():

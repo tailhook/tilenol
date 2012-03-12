@@ -43,7 +43,7 @@ class Title(Widget):
         canvas.move_to(l + self.padding.left,
                        self.height - self.padding.bottom)
         canvas.show_text(win.props.get('_NET_WM_NAME')
-            or win.props.get('WM_NAME'))
+            or win.props.get('WM_NAME') or '')
         return r, r
 
 
