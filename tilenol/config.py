@@ -120,17 +120,6 @@ class Config(object):
         from tilenol import widgets
         for binfo in bars:
             w = []
-            for winfo in binfo.pop('left', ()):
-                if isinstance(winfo, dict):
-                    for typ, params in winfo:
-                        break
-                else:
-                    typ = winfo
-                    params = {}
-                if separator.match(typ):
-                    typ = 'Sep'
-                wclass = getattr(widgets, typ)
-                w.append(wclass(**params))
             for winfo in reversed(binfo.pop('right', ())):
                 if isinstance(winfo, dict):
                     for typ, params in winfo:
@@ -141,6 +130,17 @@ class Config(object):
                 if separator.match(typ):
                     typ = 'Sep'
                 params['right'] = True
+                wclass = getattr(widgets, typ)
+                w.append(wclass(**params))
+            for winfo in binfo.pop('left', ()):
+                if isinstance(winfo, dict):
+                    for typ, params in winfo:
+                        break
+                else:
+                    typ = winfo
+                    params = {}
+                if separator.match(typ):
+                    typ = 'Sep'
                 wclass = getattr(widgets, typ)
                 w.append(wclass(**params))
             sno = int(binfo.pop('screen', 0))
