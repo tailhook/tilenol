@@ -37,6 +37,8 @@ class Channel(channel.PipelinedReqChannel):
         super().__init__()
         self.unixsock = unixsock
         self.request_id = 0
+        self.last_seq = 0
+        self.epoch = 0
         self.event_dispatcher = event_dispatcher
         self.proto = proto
         if unixsock:
@@ -116,6 +118,10 @@ class Channel(channel.PipelinedReqChannel):
     def produce(self, seq, value):
         if not self._alive:
             raise ShutdownException()
+        if seq < self.last_seq:
+            self.epoch += 65536
+        self.last_seq = seq
+        seq += self.epoch
         assert seq <= self.request_id
         request_id, fut, tb = self._producing.popleft()
         while request_id < seq:
