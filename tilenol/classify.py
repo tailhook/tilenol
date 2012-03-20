@@ -63,6 +63,12 @@ def layout_properties(**kw):
     return setter
 
 
+def ignore_hints(ignore):
+    def setter(win):
+        win.ignore_hints = True
+    return setter
+
+
 def move_to_group_of(prop):
     def setter(win):
         wid = win.props[prop][0]
@@ -86,6 +92,7 @@ all_conditions = {
     }
 all_actions = {
     'layout-properties': layout_properties,
+    'ignore-hints': ignore_hints,
     'move-to-group-of': move_to_group_of,
     'move-to-group': move_to_group,
     }

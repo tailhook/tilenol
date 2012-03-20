@@ -159,14 +159,14 @@ class Config(object):
                 cond = []
                 act = []
                 for k, v in rule.items():
-                    if isinstance(v, str):
-                        args = (v,)
+                    if isinstance(v, list):
+                        args = v
                         kw = {}
                     elif isinstance(v, dict):
                         args = {}
                         kw = v
                     else:
-                        args = v
+                        args = (v,)
                         kw = {}
                     if k in all_conditions:
                         cond.append(all_conditions[k](*args, **kw))

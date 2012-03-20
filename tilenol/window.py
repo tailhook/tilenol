@@ -71,6 +71,7 @@ class Window(object):
     theme = dependency(Theme, 'theme')
 
     border_width = 0
+    ignore_hints = False
 
     def __init__(self, wid):
         self.wid = wid
@@ -510,7 +511,7 @@ class Frame(Window):
         y = 0
         rw = rect.width - self.border_width*2
         rh = rect.height - self.border_width*2
-        if hints:
+        if hints and not self.content.ignore_hints:
             width, height = self._apply_hints(rw, rh, hints)
             if width < rw:
                 x = rw//2 - width//2
