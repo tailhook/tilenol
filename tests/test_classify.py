@@ -3,10 +3,15 @@ import mock
 
 class TestClassify(unittest.TestCase):
 
+
     def setUp(self):
-        from tilenol.classify import Classifier
+        from tilenol.classify import Classifier, all_actions, all_conditions
         cl = Classifier()
-        cl.default_rules()
+        cl.add_rule([all_conditions['match-type']('utility')],
+                    [all_actions['layout-properties'](floating=True)])
+        cl.add_rule([],
+                    [all_actions['layout-properties'](floating=False)],
+                    klass="Gimp")
         self.cl = cl
 
     def testFloat(self):
