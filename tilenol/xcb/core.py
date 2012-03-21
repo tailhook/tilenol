@@ -2,6 +2,22 @@ from functools import partial
 from collections import namedtuple
 import struct
 
+from zorro.util import cached_property
+
+try:
+    from .shm import ShmPixbuf
+except ImportError:
+    import warnings
+    warnings.warn('Shm is not available, expect poor performance.'
+                  ' Install sysv_ipc')
+    ShmPixbuf = None
+
+try:
+    from .pixbuf import Pixbuf
+except ImportError:
+    import warnings
+    warnings.warn('Cairo is not available, no drawing would work')
+
 
 fmtlen = {
     0: 0,
@@ -198,6 +214,24 @@ class Core(object):
 
     def get_events(self):
         return self._event_iterator
+
+    def pixbuf(self, width, height):
+        if width*height < 1024:
+            return Pixbuf(width, height, self)
+        elif hasattr(self, 'shm') and ShmPixbuf:
+            return ShmPixbuf(width, height, self)
+        elif hasattr(self, 'bigreq') or width*height*4 < 65000:
+            return Pixbuf(width, height, self)
+
+    @cached_property
+    def pixbuf_gc(self):
+        res = self._conn.new_xid()
+        self.raw.CreateGC(
+            cid=res,
+            drawable=self.root_window,
+            params={},
+            )
+        return res
 
 
 

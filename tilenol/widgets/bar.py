@@ -38,22 +38,14 @@ class Bar(object):
 
     def set_bounds(self, rect):
         self.bounds = rect
-        # we have limit on the size of the bar until BIG-REQUESTS or SHM
-        self.width = min(rect.width, (1 << 16) // self.height)
+        self.width = rect.width
         stride = self.xcore.bitmap_stride
-        self.img = cairo.ImageSurface(cairo.FORMAT_ARGB32,
-            int(ceil(self.width/stride)*stride), self.height)
-        self.cairo = cairo.Context(self.img)
+        self.img = self.xcore.pixbuf(self.width, self.height)
+        self.cairo = self.img.context()
         if self.window and not self.window.set_bounds(rect):
             self.redraw.emit()
 
     def create_window(self):
-        self._gc = self.xcore._conn.new_xid()  # TODO(tialhook) private api?
-        self.xcore.raw.CreateGC(
-            cid=self._gc,
-            drawable=self.xcore.root_window,
-            params={},
-            )
         EM = self.xcore.EventMask
         CW = self.xcore.CW
         self.window = DisplayWindow(self.xcore.create_toplevel(self.bounds,
@@ -80,18 +72,6 @@ class Bar(object):
             self.cairo.clip()
             l, r = i.draw(self.cairo, l, r)
             self.cairo.restore()
-        self.xcore.raw.PutImage(
-            format=self.xcore.ImageFormat.ZPixmap,
-            drawable=self.window,
-            gc=self._gc,
-            width=self.img.get_width(),
-            height=self.img.get_height(),
-            dst_x=0,
-            dst_y=0,
-            left_pad=0,
-            depth=24,
-            data=bytes(self.img),
-            )
-
+        self.img.draw(0, 0, self.window)
 
 
