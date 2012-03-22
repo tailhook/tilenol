@@ -8,9 +8,7 @@ try:
     from .shm import ShmPixbuf
 except ImportError:
     import warnings
-    warnings.warn('Shm is not available, expect poor performance.'
-                  ' Install sysv_ipc')
-    ShmPixbuf = None
+    warnings.warn('Shm is not available, expect poor performance.')
 
 try:
     from .pixbuf import Pixbuf
@@ -118,7 +116,7 @@ class Core(object):
         for k, v in connection.proto.subprotos.items():
             if not v.extension:
                 continue
-            ext = self.raw.QueryExtension(name=v.xname)
+            ext = connection.query_extension(k)
             if not ext['present']:
                 continue
             setattr(self, k, RawWrapper(self._conn, v, ext['major_opcode']))

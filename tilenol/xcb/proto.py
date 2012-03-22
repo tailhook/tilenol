@@ -41,6 +41,7 @@ class Channel(channel.PipelinedReqChannel):
         self.epoch = 0
         self.event_dispatcher = event_dispatcher
         self.proto = proto
+        self.errors = proto.subprotos['xproto'].errors_by_num.copy()
         if unixsock:
             self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         else:
@@ -73,19 +74,20 @@ class Channel(channel.PipelinedReqChannel):
         buf.extend(auth_type)
         buf.extend(b'\x00'*(4 - len(auth_type) % 4))
         buf.extend(auth_key)
-        return self.request(buf).get()
+        return self.request(buf, None).get()
 
-    def request(self, input):
+    def request(self, input, reply):
         if not self._alive:
             raise channel.PipeError()
         val = Future()
-        self._pending.append((input, val, None))
+        self._pending.append((input, val, reply))
         self._cond.notify()
         return val
 
     def push(self, input):
         """For requests which do not need an answer"""
-        self._pending.append((input, None, traceback.extract_stack()))
+        self._pending.append((input, None,
+                              traceback.extract_stack(limit=7)[:-2]))
         self._cond.notify()
 
     def sender(self):
@@ -123,24 +125,44 @@ class Channel(channel.PipelinedReqChannel):
         self.last_seq = seq
         seq += self.epoch
         assert seq <= self.request_id
-        request_id, fut, tb = self._producing.popleft()
+        request_id, fut, reply = self._producing.popleft()
         while request_id < seq:
             if fut is not None:
                 fut.throw(RuntimeError("Request ignored"))
             assert fut is None
-            request_id, fut, tb = self._producing.popleft()
+            request_id, fut, reply = self._producing.popleft()
         assert seq == request_id, (seq, request_id)
         if fut is not None:
+            if value[0] == 0:
+                value = self.parse_error(value)
+            else:
+                if reply is not None:
+                    value = self.parse_reply(reply, value)
             fut.set(value)
         else:
             assert value[0] == 0
-            typ = self.proto.subprotos['xproto'].errors_by_num[value[1]]
-            err, pos = typ.read_from(value, 6)
-            assert len(value) == max(pos, 30)
-            lst = traceback.format_list(tb)
+            err = self.parse_error(value)
+            lst = traceback.format_list(reply)
             lst.extend(traceback.format_exception_only(
-                XError, XError(typ, err)))
+                err.__class__, err))
             log.error("Error in asynchronous request\n%s", ''.join(lst))
+
+    def parse_reply(self, reply, buf):
+        assert buf[0] == 1
+        val, pos = reply.read_from(buf, 1)
+        assert max(ceil((pos-2)/4)*4+2, 26) == len(buf), (pos, len(buf))
+        return val
+
+    def parse_error(self, buf):
+        # TODO(tailhook) parse extension errors
+        typ = self.errors[buf[1]]
+        err, pos = typ.read_from(buf, 6)
+        assert len(buf) == max(pos, 30), (len(buf), pos, buf)
+        return XError(typ, err)
+
+    def register_error(self, code, proto):
+        for i, v in proto.errors_by_num.items():
+            self.errors[code+i] = v
 
     def _stop_producing(self):
         prod = self._producing
@@ -275,11 +297,18 @@ class Connection(object):
         inc = mask & -mask
         self.xid_generator = iter(range(base, base | mask, inc))
 
-    def parse_error(self, buf):
-        typ = self.proto.errors_by_num[buf[1]]
-        err, pos = typ.read_from(buf, 6)
-        assert len(buf) == max(pos, 30), (len(buf), pos, buf)
-        raise XError(typ, err)
+    def query_extension(self, name):
+        sub = self.proto.subprotos[name]
+        conn = self.connection()
+        res = self.do_request(
+            self.proto.subprotos['xproto'].requests['QueryExtension'],
+            name=sub.xname)
+        if res['present']:
+            if res['first_event']:
+                self.register_event(res['first_event'], sub)
+            if res['first_error']:
+                conn.register_error(res['first_error'], sub)
+        return res
 
     def do_request(self, rtype, *, _opcode=None, **kw):
         conn = self.connection()
@@ -300,18 +329,19 @@ class Connection(object):
         buf += b'\x00'*(ln*4 - len(buf))
 
         if rtype.reply:
-            buf = conn.request(buf).get()
-            if buf[0] == 0:
-                self.parse_error(buf)
-            assert buf[0] == 1
-            val, pos = rtype.reply.read_from(buf, 1)
-            assert max(ceil((pos-2)/4)*4+2, 26) == len(buf), (pos, len(buf))
-            return val
+            res = conn.request(buf, rtype.reply).get()
+            if isinstance(res, XError):
+                raise res
+            else:
+                return res
         else:
             conn.push(buf)
 
     def new_xid(self):
         return next(self.xid_generator)
+
+    def register_event(self, code, value):
+        print("NEW EVENT", code, value)
 
     def event_dispatcher(self, seq, buf):
         etype = self.proto.subprotos['xproto'].events_by_num[buf[0] & 127]

@@ -72,6 +72,6 @@ class Bar(object):
             self.cairo.clip()
             l, r = i.draw(self.cairo, l, r)
             self.cairo.restore()
-        self.img.draw(0, 0, self.window)
+        self.img.draw(self.window)
 
 

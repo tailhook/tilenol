@@ -1,18 +1,25 @@
 import cairo
 
 
-class Pixbuf(object):
+class PixbufBase(object):
 
-    def __init__(self, width, height, xcore):
-        # TODO(tailhook) round up to a scanline
-        self._image = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    def __init__(self, image, xcore):
+        self._image = image
         self._context = cairo.Context(self._image)
         self.xcore = xcore
 
     def context(self):
         return self._context
 
-    def draw(self, x, y, target):
+
+class Pixbuf(object):
+
+    def __init__(self, width, height, xcore):
+        # TODO(tailhook) round up to a scanline
+        super().__init__(cairo.ImageSurface(
+            cairo.FORMAT_ARGB32, width, height))
+
+    def draw(self, target, x=0, y=0):
         self.xcore.raw.PutImage(
             format=self.xcore.ImageFormat.ZPixmap,
             drawable=target,
