@@ -218,7 +218,7 @@ class Core(object):
             return Pixbuf(width, height, self)
         elif hasattr(self, 'shm') and ShmPixbuf:
             return ShmPixbuf(width, height, self)
-        elif hasattr(self, 'bigreq') or width*height*4 < 65000:
+        elif hasattr(self, 'bigreq') or width*height*4 < 260000:
             return Pixbuf(width, height, self)
 
     @cached_property

@@ -58,7 +58,6 @@ class Tilenol(object):
         proto.load_xml('xproto')
         proto.load_xml('xinerama')
         proto.load_xml('shm')
-        proto.load_xml('bigreq')
         self.conn = conn = Connection(proto)
         conn.connection()
         self.root_window = Window(conn.init_data['roots'][0]['root'])
