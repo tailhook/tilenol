@@ -77,6 +77,37 @@ class Config(object):
         for i, path in enumerate(self.config.dirs):
             ext.__path__.insert(i, os.path.join(path, 'tilenol', 'ext'))
 
+    def get_extension_class(self, name,
+            module_name,
+            default_module,
+            base_class,
+            default_value=None):
+        try:
+            mod = __import__('tilenol.ext.'+module_name, globals(), {}, ['*'])
+        except ImportError:
+            mod = None
+        if '.' in name:
+            module, cname = name.split('.', 1)
+            try:
+                mod = __import__('tilenol.ext.' + module,
+                           globals(), {}, ['*'])
+                res = getattr(mod, cname)
+            except (ImportError, AttributeError, ValueError):
+                log.warning('Class %r is not available', name)
+                return default_value
+        else:
+            try:
+                res = getattr(mod, name)
+            except AttributeError:
+                try:
+                    res = getattr(default_module, name)
+                except AttributeError:
+                    return default_value
+        if not issubclass(res, base_class):
+            log.warning("Class %s is subclassed from wrong class")
+            return default_value
+        return res
+
     def keys(self):
         for k, v in self.config.get_config('hotkeys', {}).items():
             if isinstance(v, str):
@@ -98,30 +129,13 @@ class Config(object):
         from tilenol.groups import Group
         groups = []
         if 'groups' in self.data:
-            from tilenol.layout import examples
-            try:
-                from tilenol.ext import layouts
-            except ImportError:
-                layouts = None
-                log.warning("Can't import layouts module,"
-                            " extra layouts are not available")
+            from tilenol.layout import examples, Layout
             for name, lname in self.data['groups'].items():
-                if '.' in lname:
-                    module, cname = lname.split('.', 1)
-                    try:
-                        mod = __import__('tilenol.ext.' + module,
-                                   globals(), {}, ['*'])
-                        lay = getattr(mod, cname)
-                    except (ImportError, AttributeError):
-                        log.warning('Layout %r is not available', lname)
-                        lay = examples.Tile
-                else:
-                    try:
-                        lay = (getattr(examples, lname, None)
-                               or getattr(layouts, lname))
-                    except AttributeError:
-                        log.warning('Layout %r is not available', lname)
-                        lay = examples.Tile
+                lay = self.get_extension_class(lname,
+                    module_name='layouts',
+                    default_module=examples,
+                    base_class=Layout,
+                    default_value=examples.Tile)
                 groups.append(Group(str(name), lay))
         else:
             from tilenol.layout import Tile
@@ -146,8 +160,12 @@ class Config(object):
                 if separator.match(typ):
                     typ = 'Sep'
                 params['right'] = True
-                wclass = getattr(widgets, typ)
-                w.append(wclass(**params))
+                wclass = self.get_extension_class(typ,
+                    module_name='widgets',
+                    default_module=widgets,
+                    base_class=widgets.base.Widget)
+                if wclass is not None:
+                    w.append(wclass(**params))
             for winfo in binfo.pop('left', ()):
                 if isinstance(winfo, dict):
                     for typ, params in winfo:
@@ -157,8 +175,12 @@ class Config(object):
                     params = {}
                 if separator.match(typ):
                     typ = 'Sep'
-                wclass = getattr(widgets, typ)
-                w.append(wclass(**params))
+                wclass = self.get_extension_class(typ,
+                    module_name='widgets',
+                    default_module=widgets,
+                    base_class=widgets.base.Widget)
+                if wclass is not None:
+                    w.append(wclass(**params))
             sno = int(binfo.pop('screen', 0))
             bar = widgets.Bar( w, **binfo)
             yield sno, bar
