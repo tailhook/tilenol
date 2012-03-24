@@ -184,7 +184,7 @@ class Split(Layout):
         pxoff = 0
         for s in all_stacks:
             if s.size is not None and not skip_pixels:
-                end = rstart + s.size
+                end = start + s.size
                 pxoff += s.size
             else:
                 curw += s.weight

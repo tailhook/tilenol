@@ -15,6 +15,7 @@ setup(name='Tilenol',
         'tilenol.xcb',
         'tilenol.layout',
         'tilenol.widgets',
+        'tilenol.ext',
         ],
       scripts=['runtilenol'],
     )

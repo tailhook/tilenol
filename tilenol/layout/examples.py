@@ -32,7 +32,7 @@ class Gimp(Split):
 
     class toolbox(Stack):
         limit = 1
-        weight = 1
+        size = 184
 
     class main(Stack):
         weight = 4
@@ -40,4 +40,4 @@ class Gimp(Split):
 
     class dock(Stack):
         limit = 1
-        weight = 2
+        size = 324
