@@ -72,6 +72,11 @@ class Config(object):
         config = self.config.get_config('config', {})
         self.data = config
 
+    def init_extensions(self):
+        from tilenol import ext
+        for i, path in enumerate(self.config.dirs):
+            ext.__path__.insert(i, os.path.join(path, 'tilenol', 'ext'))
+
     def keys(self):
         for k, v in self.config.get_config('hotkeys', {}).items():
             if isinstance(v, str):
@@ -95,17 +100,28 @@ class Config(object):
         if 'groups' in self.data:
             from tilenol.layout import examples
             try:
-                from tilenol.layout import layouts
+                from tilenol.ext import layouts
             except ImportError:
+                layouts = None
                 log.warning("Can't import layouts module,"
                             " extra layouts are not available")
             for name, lname in self.data['groups'].items():
-                try:
-                    lay = (getattr(examples, lname, None)
-                           or getattr(layouts, lname))
-                except AttributeError:
-                    log.warning('Layout %r is not available', lname)
-                    lay = examples.Tile2
+                if '.' in lname:
+                    module, cname = lname.split('.', 1)
+                    try:
+                        mod = __import__('tilenol.ext.' + module,
+                                   globals(), {}, ['*'])
+                        lay = getattr(mod, cname)
+                    except (ImportError, AttributeError):
+                        log.warning('Layout %r is not available', lname)
+                        lay = examples.Tile
+                else:
+                    try:
+                        lay = (getattr(examples, lname, None)
+                               or getattr(layouts, lname))
+                    except AttributeError:
+                        log.warning('Layout %r is not available', lname)
+                        lay = examples.Tile
                 groups.append(Group(str(name), lay))
         else:
             from tilenol.layout import Tile

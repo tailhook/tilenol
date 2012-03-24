@@ -66,7 +66,10 @@ class Tilenol(object):
         inj['xcore'] = xcore = Core(conn)
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
+
         cfg = inj['config'] = inj.inject(Config())
+        cfg.init_extensions()
+
         inj['theme'] = inj.inject(cfg.theme())
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
