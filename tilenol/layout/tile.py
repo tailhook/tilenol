@@ -14,11 +14,15 @@ class BaseStack(object):
 
     It's customized by subclassing, not by instantiating
 
+    :var size: size (e.g. width) of stack in pixels, if None weight is used
+    :var min_size: minimum size of stack to start to ignore pixel sizes
     :var weight: the bigger weight is, the bigger part of screen this stack
-        occupies
+        occupies (if width is unspecified or screen size is too small)
     :var limit: limit number of windows inside the stack
     :var priority: windows are placed into stacks with smaller priority first
     """
+    size = None
+    min_size = 32
     weight = 1
     limit = None
     priority = 100
@@ -143,13 +147,16 @@ class Split(Layout):
 
     def __init__(self):
         super().__init__()
-        stacks = []
+        self.auto_stacks = []
+        self.stack_list = []
+        self.stacks = {}
         for stack_class in self.get_defined_classes(BaseStack).values():
             stack = stack_class(self)
-            stacks.append(stack)
-        self.stack_list = stacks[:]
-        stacks.sort(key=lambda s: s.priority)
-        self.stacks = OrderedDict((s.__class__.__name__, s) for s in stacks)
+            self.stacks[stack.__class__.__name__] = stack
+            self.stack_list.append(stack)
+            if stack.priority is not None:
+                self.auto_stacks.append(stack)
+        self.auto_stacks.sort(key=lambda s: s.priority)
 
     def set_bounds(self, bounds):
         self.bounds = bounds
@@ -160,7 +167,6 @@ class Split(Layout):
             all_stacks = self.stack_list
         else:
             all_stacks = [s for s in self.stack_list if not s.empty]
-        totw = sum(s.weight for s in all_stacks)
         curw = 0
         if self.vertical:
             rstart = start = box.x
@@ -168,9 +174,21 @@ class Split(Layout):
         else:
             rstart = start = box.y
             totalpx = box.height
+        totpx = sum((s.size or s.min_size) for s in all_stacks)
+        totw = sum(s.weight for s in all_stacks if s.size is None)
+        skip_pixels = totpx > totalpx or (not totw and totpx != totalpx)
+        if skip_pixels:
+            totw = sum(s.weight for s in all_stacks)
+        else:
+            totalpx -= sum(s.size for s in all_stacks if s.size is not None)
+        pxoff = 0
         for s in all_stacks:
-            curw += s.weight
-            end = rstart + int(floor(curw/totw*totalpx))
+            if s.size is not None and not skip_pixels:
+                end = rstart + s.size
+                pxoff += s.size
+            else:
+                curw += s.weight
+                end = rstart + pxoff + int(floor(curw/totw*totalpx))
             if self.vertical:
                 s.box = Rectangle(start, box.y, end-start, box.height)
             else:
@@ -183,7 +201,7 @@ class Split(Layout):
             if s is not None and not s.full:
                 s.add(win)
                 return True
-        for s in self.stacks.values():
+        for s in self.auto_stacks:
             if not s.full:
                 s.add(win)
                 return True
