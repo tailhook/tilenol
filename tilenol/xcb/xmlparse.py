@@ -88,9 +88,10 @@ class Struct(Basic):
 
 class Event(Struct):
 
-    def __init__(self, name, number, fields):
+    def __init__(self, name, number, fields, no_seq=False):
         super().__init__(name, fields)
         self.number = number
+        self.no_seq = no_seq
         allfields = ['seq']
         allfields.extend(f + '_' if keyword.iskeyword(f) else f
             for f in fields if isinstance(f, str))
@@ -314,7 +315,8 @@ class Subprotocol(object):
 
     def _parse_event(self, el):
         items = self._parse_items(el)
-        ev = Event(el.attrib['name'], int(el.attrib['number']), items)
+        ev = Event(el.attrib['name'], int(el.attrib['number']), items,
+                   no_seq=el.attrib.get('no-sequence-number') == 'true')
         self.events[ev.name] = ev
         self.events_by_num[ev.number] = ev
 

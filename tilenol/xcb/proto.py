@@ -218,23 +218,21 @@ class Channel(channel.PipelinedReqChannel):
                     raise
             while len(buf)-pos >= 8:
                 opcode, seq, ln = struct.unpack_from('<BxHL', buf, pos)
-                # TODO(tailhook) check seq
                 if opcode != 1:
                     if len(buf) - pos < 32:
                         break
                     val = buf[pos:pos+2] + buf[pos+4:pos+32]
                     pos += 32
+                    if opcode > 1:
+                        self.event_dispatcher(seq, buf[pos-32:pos])
+                        continue
                 else:
                     ln = ln*4+32
                     if len(buf)-pos < ln:
                         break
-                    val = buf[pos:pos+2]
-                    val.extend(buf[pos+8:pos+ln])
+                    val = buf[pos:pos+2] + buf[pos+8:pos+ln]
                     pos += ln
-                if opcode > 1:
-                    self.event_dispatcher(seq, val)
-                else:
-                    self.produce(seq, val)
+                self.produce(seq, val)
 
 
 class Connection(object):
@@ -345,8 +343,11 @@ class Connection(object):
 
     def event_dispatcher(self, seq, buf):
         etype = self.proto.subprotos['xproto'].events_by_num[buf[0] & 127]
+        if not etype.no_seq:
+            seq = None
+            buf = buf[:2] + buf[4:]
         ev, pos = etype.read_from(buf, 1)
-        assert pos < 32
+        assert pos <= 32
         self.events.append(etype.type(seq, **ev))
         self._condition.notify()
 
