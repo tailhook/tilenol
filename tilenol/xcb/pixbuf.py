@@ -5,6 +5,8 @@ class PixbufBase(object):
 
     def __init__(self, image, xcore):
         self._image = image
+        self.width = image.get_width()
+        self.height = image.get_height()
         self._context = cairo.Context(self._image)
         self.xcore = xcore
 

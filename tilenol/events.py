@@ -27,6 +27,7 @@ class EventDispatcher(object):
         self.windows = {}
         self.frames = {}
         self.all_windows = {}
+        self.active_field = None
 
     def dispatch(self, ev):
         meth = getattr(self, 'handle_'+ev.__class__.__name__, None)
@@ -39,7 +40,9 @@ class EventDispatcher(object):
         self.all_windows[win.wid] = win
 
     def handle_KeyPressEvent(self, ev):
-        self.keys.dispatch_event(ev)
+        if not self.keys.dispatch_event(ev):
+            if self.active_field:
+                self.active_field.handle_keypress(ev)
 
     def handle_KeyReleaseEvent(self, ev):
         pass  # nothing to do at the moment

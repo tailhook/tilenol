@@ -6,6 +6,7 @@ from .pixbuf import PixbufBase
 
 IPC_CREAT = 0o1000
 IPC_PRIVATE = 0
+IPC_RMID = 0
 
 
 try:
@@ -64,9 +65,9 @@ class ShmPixbuf(PixbufBase):
             )
 
     def __del__(self):
-        self.xcore.shm.Detach(shmseg=self.shmseg)
         self._image.finish()
         shmdt(self.addr)
         shmctl(self.shmid, IPC_RMID, 0)
         del self.shmid
         del self.addr
+        self.xcore.shm.Detach(shmseg=self.shmseg)

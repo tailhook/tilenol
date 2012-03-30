@@ -143,6 +143,11 @@ class Core(object):
             self.keycode_to_keysym[row[0]] = row[1]
             self.keysym_to_keycode[row[1]] = row[0]
 
+        caps = self.ModMask.Lock  # caps lock
+        num = getattr(self.ModMask, '2')  # mod2 is usually numlock
+        mode = getattr(self.ModMask, '5')  # mod5 is usually mode_switch
+        self.modifiers_mask = ~(caps|num|mode)
+
     def create_toplevel(self, bounds, border=0, klass=None, params={}):
         return self.create_window(bounds,
             border=border,

@@ -92,6 +92,13 @@ class Theme(SubTheme):
         self.bar.separator_width = 1
         self.bar.set_color('separator_color', gray)
 
+        self.menu = SubTheme('bar')
+        self.menu.set_color('background', gray)
+        self.menu.set_color('text', white)
+        self.menu.font = Font('Consolas', 18)
+        self.menu.padding = Padding(2, 4, 7, 4)
+        self.menu.line_height = 24
+
         self.hint = SubTheme('hint')
         self.hint.font = Font('Consolas', 18)
         self.hint.set_color('background', black)

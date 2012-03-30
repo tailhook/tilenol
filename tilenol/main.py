@@ -53,6 +53,12 @@ class Tilenol(object):
             keys.add_key(key, self.commander.callback(*cmd))
         keys.register_keys(self.root_window)
 
+    def register_gadgets(self):
+        inj = di(self)
+        for name, inst in self.config.gadgets():
+            inj.inject(inst)
+            self.commander[name] = inst
+
     def run(self):
         proto = Proto()
         proto.load_xml('xproto')
@@ -121,6 +127,8 @@ class Tilenol(object):
                     scr.add_top_bar(bar)
                 bar.create_window()
                 scr.updated.listen(bar.redraw.emit)
+
+        self.register_gadgets()
 
         self.catch_windows()
         signal.signal(signal.SIGCHLD, child_handler)

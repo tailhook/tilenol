@@ -216,3 +216,26 @@ class Config(object):
                     raise NotImplementedError("Empty actions {!r}"
                                               .format(rule))
                 yield cls, cond, act
+
+
+    def gadgets(self):
+        from tilenol import gadgets
+        for name, gadget in chain(
+                self.config.get_config('gadgets', {}).items(),
+                self.data.get('gadgets', {}),
+                ):
+            if isinstance(gadget, str):
+                clsname = gadget
+                kw = {}
+            else:
+                clsname = gadget['=']  # YAMLy convention
+                kw = gadget.copy()
+                kw.pop('=')
+
+            try:
+                cls = getattr(gadgets, clsname)
+            except AttributeError:
+                log.warning("Gadget %s is not available", clsname)
+                continue
+
+            yield name, cls(**kw)
