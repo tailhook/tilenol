@@ -5,6 +5,7 @@ from zorro.di import di, has_dependencies, dependency
 
 from tilenol.xcb import Core as XCore, Keysyms
 from tilenol.events import EventDispatcher
+from tilenol.theme import Theme
 
 
 @has_dependencies
@@ -76,7 +77,7 @@ class TextField(object):
         if mod:
             # TODO(tailhook) capitals?
             return
-        if ch in string.printable:
+        if ch in string.printable and ch != '\n':
             self._clearsel(ch)
             self.sel_start += 1
         self.draw_event.emit()
@@ -116,8 +117,34 @@ class TextField(object):
             self.sel_start += 1
 
     def draw(self, canvas):
-        th = self.theme
-        canvas.set_source(th.text_pat)
-        th.font.apply(canvas)
-        canvas.move_to(th.padding.left, th.padding.top+10)
-        canvas.show_text(self.value)
+        sx, sy, tw, th, ax, ay = canvas.text_extents(self.value)
+        one = self.value[0:self.sel_start]
+        two = self.value[self.sel_start:self.sel_start+self.sel_width]
+        three = self.value[self.sel_start+self.sel_width:]
+        self.theme.font.apply(canvas)
+        canvas.move_to(self.theme.padding.left,
+            self.theme.line_height - self.theme.padding.bottom)
+        canvas.set_source(self.theme.text_pat)
+        canvas.show_text(one)
+        x, y = canvas.get_current_point()
+        canvas.fill()
+        if two:
+            sx, sy, tw, th, ax, ay = canvas.text_extents(two)
+            canvas.set_source(self.theme.selection)
+            canvas.rectangle(x, self.theme.padding.top,
+                tw, self.theme.line_height - self.theme.padding.bottom)
+            canvas.fill()
+            canvas.move_to(x, y)
+            canvas.set_source(self.theme.selection_text_pat)
+            canvas.show_text(two)
+            x, y = canvas.get_current_point()
+            canvas.fill()
+        else:
+            canvas.set_source(self.theme.cursor_pat)
+            canvas.rectangle(x, self.theme.padding.top,
+                1, self.theme.line_height - self.theme.padding.bottom)
+            canvas.fill()
+        canvas.move_to(x, y)
+        canvas.set_source(self.theme.text_pat)
+        canvas.show_text(three)
+        canvas.fill()

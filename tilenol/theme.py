@@ -95,6 +95,10 @@ class Theme(SubTheme):
         self.menu = SubTheme('bar')
         self.menu.set_color('background', gray)
         self.menu.set_color('text', white)
+        self.menu.set_color('highlight', blue)
+        self.menu.set_color('selection', blue)
+        self.menu.set_color('selection_text', white)
+        self.menu.set_color('cursor', black)
         self.menu.font = Font('Consolas', 18)
         self.menu.padding = Padding(2, 4, 7, 4)
         self.menu.line_height = 24
