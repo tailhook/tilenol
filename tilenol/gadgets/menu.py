@@ -23,6 +23,12 @@ class Select(GadgetBase):
         self.max_lines = max_lines
         self.redraw = Event('menu.redraw')
         self.redraw.listen(self._redraw)
+        self.submit = Event('menu.submit')
+        self.submit.listen(self._submit)
+        self.complete = Event('menu.complete')
+        self.complete.listen(self._complete)
+        self.close = Event('menu.close')
+        self.close.listen(self._close)
 
     def __zorro_di_done__(self):
         self.line_height = self.theme.menu.line_height
@@ -53,10 +59,12 @@ class Select(GadgetBase):
         self.dispatcher.frames[wid] = self.window  # dirty hack
         self.window.show()
         self.window.focus()
-        self.text_field = di(self).inject(TextField(
-            self.redraw,
-            self.theme.menu,
-            ))
+        self.text_field = di(self).inject(TextField(self.theme.menu, events={
+            'draw': self.redraw,
+            'submit': self.submit,
+            'complete': self.complete,
+            'close': self.close,
+            }))
         self.dispatcher.active_field = self.text_field
         self._items = self.items()
 
@@ -76,6 +84,8 @@ class Select(GadgetBase):
                 yield line, [(1, value), (0, line[len(value):])]
 
     def _redraw(self):
+        if not self.window and not self.text_field:
+            return
         lines = list(islice(self.match_lines(self.text_field.value),
                             self.max_lines))
         newh = (len(lines)+1)*self.line_height
@@ -101,6 +111,22 @@ class Select(GadgetBase):
                 ctx.show_text(tx)
             y += self.line_height
         self.draw()
+
+    def _submit(self):
+        value = self.text_field.value
+        self._close()
+
+    def _close(self):
+        self.window.destroy()
+        self.window = None
+        self.text_field = None
+
+    def _complete(self):
+        text, opcodes = next(iter(self.match_lines(self.text_field.value)))
+        self.text_field.value = text
+        self.text_field.sel_start = len(text)
+        self.text_field.sel_width = 0
+        self.redraw.emit()
 
 
 class SelectExecutable(Select):

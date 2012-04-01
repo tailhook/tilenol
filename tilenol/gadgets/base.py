@@ -31,12 +31,12 @@ class TextField(object):
     xcore = dependency(XCore, 'xcore')
     keysyms = dependency(Keysyms, 'keysyms')
 
-    def __init__(self, draw_event, theme):
+    def __init__(self, theme, events):
         self.value = ""
         self.sel_start = 0
         self.sel_width = 0
-        self.draw_event = draw_event
         self.theme = theme
+        self.events = events
 
     def __zorro_di_done__(self):
         self.key_table = {}
@@ -72,7 +72,7 @@ class TextField(object):
         meth = self.key_table.get((mod, sym))
         if meth is not None:
             meth()
-            self.draw_event.emit()
+            self.events['draw'].emit()
             return
         if mod:
             # TODO(tailhook) capitals?
@@ -80,7 +80,7 @@ class TextField(object):
         if ch in string.printable and ch != '\n':
             self._clearsel(ch)
             self.sel_start += 1
-        self.draw_event.emit()
+        self.events['draw'].emit()
 
     def _clearsel(self, value=''):
         self.value = (self.value[:self.sel_start]
@@ -94,7 +94,6 @@ class TextField(object):
             self.sel_start -= 1
             self.sel_width += 1
         self._clearsel()
-
 
     @key('<Delete>')
     def do_del(self):
@@ -115,6 +114,21 @@ class TextField(object):
             self.sel_width = 0
         else:
             self.sel_start += 1
+
+    @key('<Return>')
+    def do_submit(self):
+        if 'submit' in self.events:
+            self.events['submit'].emit()
+
+    @key('<Tab>')
+    def do_complete(self):
+        if 'complete' in self.events:
+            self.events['complete'].emit()
+
+    @key('<Escape>')
+    def do_close(self):
+        if 'close' in self.events:
+            self.events['close'].emit()
 
     def draw(self, canvas):
         sx, sy, tw, th, ax, ay = canvas.text_extents(self.value)
