@@ -23,8 +23,8 @@ class Select(GadgetBase):
         self.max_lines = max_lines
         self.redraw = Event('menu.redraw')
         self.redraw.listen(self._redraw)
-        self.submit = Event('menu.submit')
-        self.submit.listen(self._submit)
+        self.submit_ev = Event('menu.submit')
+        self.submit_ev.listen(self._submit)
         self.complete = Event('menu.complete')
         self.complete.listen(self._complete)
         self.close = Event('menu.close')
@@ -61,7 +61,7 @@ class Select(GadgetBase):
         self.window.focus()
         self.text_field = di(self).inject(TextField(self.theme.menu, events={
             'draw': self.redraw,
-            'submit': self.submit,
+            'submit': self.submit_ev,
             'complete': self.complete,
             'close': self.close,
             }))
@@ -115,6 +115,7 @@ class Select(GadgetBase):
     def _submit(self):
         value = self.text_field.value
         self._close()
+        self.submit(value)
 
     def _close(self):
         self.window.destroy()
@@ -156,5 +157,8 @@ class SelectExecutable(Select):
         data = subprocess.check_output(self.update_cmd)
         self.paths = filter(bool, map(str.strip,
             data.decode('ascii').split(':')))
+
+    def submit(self, value):
+        self.commander['env'].cmd_shell(value)
 
 
