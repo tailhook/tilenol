@@ -168,7 +168,7 @@ class Config(object):
                     w.append(wclass(**params))
             for winfo in binfo.pop('left', ()):
                 if isinstance(winfo, dict):
-                    for typ, params in winfo:
+                    for typ, params in winfo.items():
                         break
                 else:
                     typ = winfo
