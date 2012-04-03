@@ -93,6 +93,8 @@ class TextField(object):
     @key('<BackSpace>')
     def do_bs(self):
         if not self.sel_width:
+            if self.sel_start <= 0:
+                return
             self.sel_start -= 1
             self.sel_width += 1
         self._clearsel()

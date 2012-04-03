@@ -1,4 +1,5 @@
 import os
+import re
 import shlex
 import subprocess
 from itertools import islice
@@ -77,9 +78,26 @@ class Select(GadgetBase):
         self._img.draw(self.window)
 
     def match_lines(self, value):
+        matched = set()
         for line in self._items:
+            if line in matched: continue
             if line.startswith(value):
-                yield line, [(1, value), (0, line[len(value):])]
+                matched.add(line)
+                yield line, [(1, line[:len(value)]), (0, line[len(value):])]
+        ncval = value.lower()
+        for line in self._items:
+            if line in matched: continue
+            if line.lower().startswith(value):
+                matched.add(line)
+                yield line, [(1, line[:len(value)]), (0, line[len(value):])]
+        for line in self._items:
+            if line in matched: continue
+            if ncval in line.lower():
+                matched.add(line)
+                opcodes = []
+                for pt in re.compile('((?i)'+re.escape(value)+')').split(line):
+                    opcodes.append((pt.lower() == ncval, pt))
+                yield line, opcodes
 
     def _redraw(self):
         if not self.window and not self.text_field:
