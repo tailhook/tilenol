@@ -54,7 +54,8 @@ class Select(GadgetBase):
                     | self.xcore.EventMask.KeymapState
                     | self.xcore.EventMask.KeyPress,
             })
-        self.window = di(self).inject(DisplayWindow(wid, self.draw))
+        self.window = di(self).inject(DisplayWindow(wid, self.draw,
+            focus_out=self._close))
         self.dispatcher.all_windows[wid] = self.window
         self.dispatcher.frames[wid] = self.window  # dirty hack
         self.window.show()
@@ -69,11 +70,7 @@ class Select(GadgetBase):
         self._items = self.items()
 
     def cmd_hide(self):
-        self.xcore.raw.DestroyWindow(window=self.window)
-        if self.dispatcher.active_field == self.text_field:
-            self.dispatcher.active_field = None
-        self.text_field = None
-        self.window = None
+        self._close()
 
     def draw(self, rect=None):
         self._img.draw(self.window)
@@ -118,8 +115,11 @@ class Select(GadgetBase):
         self.submit(value)
 
     def _close(self):
-        self.window.destroy()
-        self.window = None
+        if self.window:
+            self.window.destroy()
+            self.window = None
+        if self.dispatcher.active_field == self.text_field:
+            self.dispatcher.active_field = None
         self.text_field = None
 
     def _complete(self):

@@ -74,6 +74,8 @@ class EventDispatcher(object):
                 self.groupman.add_window(win)
 
     def handle_EnterNotifyEvent(self, ev):
+        if self.active_field:
+            return
         try:
             win = self.frames[ev.event]
         except KeyError:

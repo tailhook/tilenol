@@ -344,12 +344,22 @@ class Window(object):
 
 class DisplayWindow(Window):
 
-    def __init__(self, wid, expose_handler):
+    def __init__(self, wid, expose_handler, focus_in=None, focus_out=None):
         super().__init__(wid)
         self.expose_handler = expose_handler
+        self._focus_in = focus_in
+        self._focus_out = focus_out
 
     def expose(self, rect):
         self.expose_handler(rect)
+
+    def focus_in(self):
+        if self._focus_in:
+            self._focus_in()
+
+    def focus_out(self):
+        if self._focus_out:
+            self._focus_out()
 
 
 @has_dependencies
