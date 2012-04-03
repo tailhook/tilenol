@@ -67,16 +67,18 @@ class TextField(object):
 
     def handle_keypress(self, event):
         sym = self.xcore.keycode_to_keysym[event.detail]
-        ch = chr(sym)
         mod = self.xcore.modifiers_mask & event.state
         meth = self.key_table.get((mod, sym))
         if meth is not None:
             meth()
             self.events['draw'].emit()
             return
-        if mod:
+        if mod not in (self.xcore.ModMask.Shift, 0):
             # TODO(tailhook) capitals?
             return
+        ch = chr(sym)
+        if mod & self.xcore.ModMask.Shift:
+            ch = chr(self.xcore.shift_keycode_to_keysym[event.detail])
         if ch in string.printable and ch != '\n':
             self._clearsel(ch)
             self.sel_start += 1

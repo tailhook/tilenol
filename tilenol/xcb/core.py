@@ -131,6 +131,7 @@ class Core(object):
 
     def init_keymap(self):
         self.keycode_to_keysym = {}
+        self.shift_keycode_to_keysym = {}
         self.keysym_to_keycode = {}
         idata = self._conn.init_data
         mapping = self.raw.GetKeyboardMapping(
@@ -141,6 +142,7 @@ class Core(object):
         for row in zip(range(idata['min_keycode'], idata['max_keycode']),
                 *(mapiter for i in range(mapping['keysyms_per_keycode']))):
             self.keycode_to_keysym[row[0]] = row[1]
+            self.shift_keycode_to_keysym[row[0]] = row[2]
             self.keysym_to_keycode[row[1]] = row[0]
 
         caps = self.ModMask.Lock  # caps lock

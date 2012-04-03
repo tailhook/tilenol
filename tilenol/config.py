@@ -143,6 +143,30 @@ class Config(object):
                 groups.append(Group(str(i), Tile))
         return groups
 
+    def all_layouts(self):
+        if hasattr(self, '_all_layouts'):
+            return self._all_layouts
+        self._all_layouts = layouts = {}
+        if 'groups' in self.data:
+            from tilenol.layout import examples, Layout
+            for name, lname in self.data['groups'].items():
+                lay = self.get_extension_class(lname,
+                    module_name='layouts',
+                    default_module=examples,
+                    base_class=Layout,
+                    default_value=examples.Tile)
+                layouts[lname] = lay
+        if 'extra_layouts' in self.data:
+            from tilenol.layout import examples, Layout
+            for name, lname in self.data['groups'].items():
+                lay = self.get_extension_class(lname,
+                    module_name='layouts',
+                    default_module=examples,
+                    base_class=Layout,
+                    default_value=examples.Tile)
+                layouts[lname] = lay
+        return layouts
+
     def bars(self):
         bars = self.data.get('bars')
         if not bars:

@@ -3,6 +3,7 @@ from zorro.di import has_dependencies, dependency, di
 from .screen import ScreenManager
 from .event import Event
 from .commands import CommandDispatcher
+from .config import Config
 
 
 @has_dependencies
@@ -85,6 +86,7 @@ class GroupManager(object):
 class Group(object):
 
     commander = dependency(CommandDispatcher, 'commander')
+    config = dependency(Config, 'config')
 
     def __init__(self, name, layout_class):
         self.name = name
@@ -199,3 +201,15 @@ class Group(object):
             else:
                 nwin = all[-1]
         nwin.frame.focus()
+
+    def cmd_set_layout(self, name):
+        if self.screen:
+            self.hide()
+        lay = self.config.all_layouts()[name]
+        self.current_layout = di(self).inject(lay())
+        for win in self.all_windows:
+            if not win.lprops.floating:
+                self.current_layout.add(win)
+        if self.screen:
+            self.set_bounds(self.screen.inner_bounds)
+            self.show()

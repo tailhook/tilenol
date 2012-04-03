@@ -10,6 +10,7 @@ from tilenol.commands import CommandDispatcher
 from tilenol.window import DisplayWindow
 from tilenol.events import EventDispatcher
 from tilenol.event import Event
+from tilenol.config import Config
 
 
 @has_dependencies
@@ -160,5 +161,19 @@ class SelectExecutable(Select):
 
     def submit(self, value):
         self.commander['env'].cmd_shell(value)
+
+
+@has_dependencies
+class SelectLayout(Select):
+
+    config = dependency(Config, 'config')
+
+    def items(self):
+        return sorted(self.config.all_layouts())
+
+    def submit(self, value):
+        if value not in self.config.all_layouts():
+            return
+        self.commander['group'].cmd_set_layout(value)
 
 
