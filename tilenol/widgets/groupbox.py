@@ -15,8 +15,9 @@ class Groupbox(Widget):
     commander = dependency(CommandDispatcher, 'commander')
     theme = dependency(Theme, 'theme')
 
-    def __init__(self, *, right=False):
+    def __init__(self, *, first_letter=False, right=False):
         super().__init__(right=right)
+        self.first_letter = first_letter
 
     def __zorro_di_done__(self):
         bar = self.theme.bar
@@ -38,14 +39,17 @@ class Groupbox(Widget):
         x = l
         between = self.padding.right + self.padding.left
         for g in self.gman.groups:
-            sx, sy, w, h, ax, ay = canvas.text_extents(g.name)
+            gname = g.name
+            if self.first_letter:
+                gname = gname[0]
+            sx, sy, w, h, ax, ay = canvas.text_extents(gname)
             if g.empty:
                 canvas.set_source(self.inactive_color)
             else:
                 canvas.set_source(self.active_color)
             canvas.move_to(x + self.padding.left,
                            self.height - self.padding.bottom)
-            canvas.show_text(g.name)
+            canvas.show_text(gname)
             if self.commander.get('group') is g:
                 canvas.set_source(self.selected_color)
                 canvas.rectangle(x + 2, 2, ax + between - 4, self.height - 4)
