@@ -147,8 +147,8 @@ class Config(object):
         if hasattr(self, '_all_layouts'):
             return self._all_layouts
         self._all_layouts = layouts = {}
+        from tilenol.layout import examples, Layout
         if 'groups' in self.data:
-            from tilenol.layout import examples, Layout
             for name, lname in self.data['groups'].items():
                 lay = self.get_extension_class(lname,
                     module_name='layouts',
@@ -157,8 +157,7 @@ class Config(object):
                     default_value=examples.Tile)
                 layouts[lname] = lay
         if 'extra_layouts' in self.data:
-            from tilenol.layout import examples, Layout
-            for name, lname in self.data['groups'].items():
+            for lname in self.data['extra_layouts']:
                 lay = self.get_extension_class(lname,
                     module_name='layouts',
                     default_module=examples,
