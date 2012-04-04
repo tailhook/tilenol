@@ -3,6 +3,7 @@ import re
 import shlex
 import subprocess
 from itertools import islice
+from operator import itemgetter
 
 from zorro.di import has_dependencies, dependency, di
 
@@ -69,7 +70,6 @@ class Select(GadgetBase):
             'close': self.close,
             }))
         self.dispatcher.active_field = self.text_field
-        self._items = self.items()
 
     def cmd_hide(self):
         self._close()
@@ -79,25 +79,29 @@ class Select(GadgetBase):
 
     def match_lines(self, value):
         matched = set()
-        for line in self._items:
+        for line, res in self._current_items:
             if line in matched: continue
             if line.startswith(value):
                 matched.add(line)
-                yield line, [(1, line[:len(value)]), (0, line[len(value):])]
+                yield (line,
+                       [(1, line[:len(value)]), (0, line[len(value):])],
+                       res)
         ncval = value.lower()
-        for line in self._items:
+        for line, res in self._current_items:
             if line in matched: continue
             if line.lower().startswith(value):
                 matched.add(line)
-                yield line, [(1, line[:len(value)]), (0, line[len(value):])]
-        for line in self._items:
+                yield (line,
+                       [(1, line[:len(value)]), (0, line[len(value):])],
+                       res)
+        for line, res in self._current_items:
             if line in matched: continue
             if ncval in line.lower():
                 matched.add(line)
                 opcodes = []
                 for pt in re.compile('((?i)'+re.escape(value)+')').split(line):
                     opcodes.append((pt.lower() == ncval, pt))
-                yield line, opcodes
+                yield (line, opcodes, res)
 
     def _redraw(self):
         if not self.window and not self.text_field:
@@ -120,7 +124,7 @@ class Select(GadgetBase):
         th = self.theme.menu
         pad = th.padding
         y = self.line_height
-        for text, opcodes in lines:
+        for text, opcodes, value in lines:
             ctx.move_to(pad.left, y + self.line_height - pad.bottom)
             for op, tx in opcodes:
                 ctx.set_source(th.highlight_pat if op else th.text_pat)
@@ -129,9 +133,13 @@ class Select(GadgetBase):
         self.draw()
 
     def _submit(self):
-        value = self.text_field.value
+        input = self.text_field.value
+        matched = None
+        value = None
+        for matched, opcodes, value in self.match_lines(input):
+            break
         self._close()
-        self.submit(value)
+        self.submit(input, matched, value)
 
     def _close(self):
         if self.window:
@@ -142,7 +150,7 @@ class Select(GadgetBase):
         self.text_field = None
 
     def _complete(self):
-        text, opcodes = next(iter(self.match_lines(self.text_field.value)))
+        text, _, val = next(iter(self.match_lines(self.text_field.value)))
         self.text_field.value = text
         self.text_field.sel_start = len(text)
         self.text_field.sel_width = 0
@@ -169,7 +177,7 @@ class SelectExecutable(Select):
                 lst = os.listdir(i)
             except OSError:
                 continue
-            names.update(lst)
+            names.update((fn, fn) for fn in lst)
         return sorted(names)
 
     def cmd_refresh(self):
@@ -177,8 +185,8 @@ class SelectExecutable(Select):
         self.paths = filter(bool, map(str.strip,
             data.decode('ascii').split(':')))
 
-    def submit(self, value):
-        self.commander['env'].cmd_shell(value)
+    def submit(self, input, matched, value):
+        self.commander['env'].cmd_shell(input)
 
 
 @has_dependencies
@@ -187,11 +195,28 @@ class SelectLayout(Select):
     config = dependency(Config, 'config')
 
     def items(self):
-        return sorted(self.config.all_layouts())
+        print(self.config.all_layouts().items())
+        return sorted(self.config.all_layouts().items(), key=itemgetter(0))
 
-    def submit(self, value):
-        if value not in self.config.all_layouts():
-            return
-        self.commander['group'].cmd_set_layout(value)
+    def submit(self, input, matched, value):
+        self.commander['group'].cmd_set_layout(matched)
 
 
+@has_dependencies
+class FindWindow(Select):
+
+    commander = dependency(CommandDispatcher, 'commander')
+
+    def items(self):
+        items = []
+        for g in self.commander['groups'].groups:
+            for win in g.all_windows:
+                t = (win.props.get('_NET_WM_NAME')
+                    or win.props.get('WM_NAME')
+                    or win.props.get('WM_ICON_NAME')
+                    or win.props.get('WM_CLASS'))
+                items.append((t, win))
+        return sorted(items, key=itemgetter(0))
+
+    def submit(self, input, matched, value):
+        self.commander['groups'].cmd_switch(value.group.name)
