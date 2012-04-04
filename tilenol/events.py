@@ -119,8 +119,18 @@ class EventDispatcher(object):
         try:
             win = self.all_windows[ev.event]
         except KeyError:
+            if(ev.event == self.xcore.root_window
+                    and ev.mode not in (self.xcore.NotifyMode.Grab,
+                                        self.xcore.NotifyMode.Ungrab)
+                    and ev.detail == getattr(self.xcore.NotifyDetail, 'None')):
+                self.xcore.raw.SetInputFocus(
+                    focus=self.xcore.root_window,
+                    revert_to=self.xcore.InputFocus.PointerRoot,
+                    time=self.xcore.last_time,
+                    )
+                return
             log.warning("Focus request for non-existent window %r",
-                ev.window)
+                ev.event)
         else:
             if(ev.mode not in (self.xcore.NotifyMode.Grab,
                                self.xcore.NotifyMode.Ungrab)
@@ -132,7 +142,7 @@ class EventDispatcher(object):
             win = self.all_windows[ev.event]
         except KeyError:
             log.warning("Focus request for non-existent window %r",
-                ev.window)
+                ev.event)
         else:
             if(ev.mode not in (self.xcore.NotifyMode.Grab,
                                self.xcore.NotifyMode.Ungrab)

@@ -171,6 +171,7 @@ class Tilenol(object):
                 self.xcore.CW.EventMask: EM.StructureNotify
                                        | EM.SubstructureNotify
                                        | EM.SubstructureRedirect
+                                       | EM.FocusChange
             })
         attr = self.xcore.raw.GetWindowAttributes(window=self.root_window)
         if not (attr['your_event_mask'] & EM.SubstructureRedirect):

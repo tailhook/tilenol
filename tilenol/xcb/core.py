@@ -127,6 +127,7 @@ class Core(object):
         self.bitmap_stride = pad//8
         self.current_event = None
         self.last_event = None
+        self.last_time = 0
         self._event_iterator = self._events()
 
     def init_keymap(self):
@@ -213,6 +214,8 @@ class Core(object):
             try:
                 self.current_event = i
                 self.last_event = i
+                if hasattr(i, 'time'):
+                    self.last_time = i.time
                 yield i
             finally:
                 self.current_event = None

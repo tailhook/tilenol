@@ -215,15 +215,25 @@ class Window(object):
             self._set_property(self.xcore.atom[atom].name,
                   *self.xcore.get_property(self, atom))
         except XError:
-            log.exception("Error getting property for window %r", self)
+            log.debug("Error getting property for window %r", self)
 
     def focus(self):
         self.done.focus = True
-        self.xcore.raw.SetInputFocus(
-            focus=self,
-            revert_to=self.xcore.InputFocus.PointerRoot,
-            time=self.xcore.last_event.time,
-            )
+        if self.xcore.atom.WM_TAKE_FOCUS in self.props.get('WM_PROTOCOLS', ()):
+            self.send_event('ClientMessage',
+                window=self,
+                type=self.xcore.atom.WM_PROTOCOLS,
+                format=32,
+                data=struct.pack('<LL',
+                    self.xcore.atom.WM_TAKE_FOCUS,
+                    self.xcore.last_event.time),
+                )
+        else:
+            self.xcore.raw.SetInputFocus(
+                focus=self,
+                revert_to=self.xcore.InputFocus.PointerRoot,
+                time=self.xcore.last_event.time,
+                )
 
     def _set_property(self, name, typ, value):
         if name == 'WM_NORMAL_HINTS':
@@ -503,6 +513,8 @@ class Frame(Window):
         self.real.focus = True
         self.content.real.focus = True
         assert self.commander.get('window') in (self.content, None)
+        if not hasattr(self.content, 'group'):
+            return
         self.commander['window'] = self.content
         self.commander['group'] = self.content.group
         self.commander['layout'] = self.content.group.current_layout
