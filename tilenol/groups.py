@@ -131,6 +131,7 @@ class Group(object):
             self.current_layout.add(win)
         win.group = self
         self.all_windows.append(win)
+        self.check_focus()
 
     def remove_window(self, win):
         assert win.group == self
@@ -174,6 +175,9 @@ class Group(object):
             # TODO(tailhook) fix bounds when showing at different screen
             #win.set_screen(self.bounds)
             win.show()
+        self.check_focus()
+
+    def check_focus(self):
         if 'window' not in self.commander:
             try:
                 win = next(iter(chain(
