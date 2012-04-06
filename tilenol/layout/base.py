@@ -26,6 +26,7 @@ class Layout(metaclass=LayoutMeta):
     def check_relayout(self):
         if self.visible:
             self.layout()
+            self.group.check_focus()
 
     @classmethod
     def get_defined_classes(cls, base):

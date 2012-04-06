@@ -94,6 +94,7 @@ class Group(object):
         self.name = name
         self.default_layout = layout_class
         self.current_layout = layout_class()
+        self.current_layout.group = self
         self.floating_windows = []
         self.all_windows = []
         self._screen = None
@@ -224,6 +225,7 @@ class Group(object):
             self.hide()
         lay = self.config.all_layouts()[name]
         self.current_layout = di(self).inject(lay())
+        self.current_layout.group = self
         for win in self.all_windows:
             if not win.lprops.floating:
                 self.current_layout.add(win)
