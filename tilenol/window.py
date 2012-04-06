@@ -226,13 +226,13 @@ class Window(object):
                 format=32,
                 data=struct.pack('<LL',
                     self.xcore.atom.WM_TAKE_FOCUS,
-                    self.xcore.last_event.time),
+                    self.xcore.last_time),
                 )
         else:
             self.xcore.raw.SetInputFocus(
                 focus=self,
                 revert_to=self.xcore.InputFocus.PointerRoot,
-                time=self.xcore.last_event.time,
+                time=self.xcore.last_time,
                 )
 
     def _set_property(self, name, typ, value):
@@ -503,8 +503,8 @@ class Frame(Window):
         self.real.focus = False
         self.content.done.focus = False
         self.content.real.focus = False
-        assert self.commander.get('window') in (self.content, None)
-        self.commander.pop('window', None)
+        win = self.commander.pop('window', None)
+        assert win in (self.content, None)
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
             self.xcore.CW.BorderPixel: self.theme.window.inactive_border,
         })
@@ -522,6 +522,11 @@ class Frame(Window):
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
             self.xcore.CW.BorderPixel: self.theme.window.active_border,
         })
+
+    def hide(self):
+        if self.commander.get('window') == self.content:
+            del self.commander['window']
+        super().hide()
 
     def destroyed(self):
         if self.commander.get('window') is self.content:

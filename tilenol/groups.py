@@ -1,3 +1,5 @@
+from itertools import chain
+
 from zorro.di import has_dependencies, dependency, di
 
 from .screen import ScreenManager
@@ -169,8 +171,19 @@ class Group(object):
     def show(self):
         self.current_layout.show()
         for win in self.floating_windows:
+            # TODO(tailhook) fix bounds when showing at different screen
             #win.set_screen(self.bounds)
             win.show()
+        if 'window' not in self.commander:
+            try:
+                win = next(iter(chain(
+                    self.current_layout.all_visible_windows(),
+                    self.floating_windows,
+                    )))
+            except StopIteration:
+                pass
+            else:
+                win.frame.focus()
 
     def cmd_focus_next(self):
         all = list(self.current_layout.all_visible_windows())
