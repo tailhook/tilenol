@@ -76,6 +76,7 @@ class Config(object):
         from tilenol import ext
         for i, path in enumerate(self.config.dirs):
             ext.__path__.insert(i, os.path.join(path, 'tilenol', 'ext'))
+        ext.__path__.insert(-1, '/usr/share/tilenol/site-extensions')
 
     def get_extension_class(self, name,
             module_name,
