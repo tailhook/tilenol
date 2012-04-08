@@ -12,10 +12,13 @@ Features
 * Configured with yaml files
 * Includes hooks for python code if needed
 * Supports multiple screens
+* It's reparenting WM (so works with Java)
 * Includes asynchronous main loop so no widgets can block entire WM
 * Includes dmenu-like thing:
     * Starts instantly without skipping first few keystrokes
     * Some fuzzy matching is implemented, search not only with a prefix
+* Has rich window classification rules to make windows floating and to put them
+  into right places
 
 
 To be Implemented Soon
