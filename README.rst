@@ -4,19 +4,42 @@ Tilenol
 Tilenol is a tiling manager. It's similar in look and feel to qtile, but
 has much different implementation and configuration.
 
+Features
+--------
+
+* Tiling WM, includes floating window support
+* Written in pure python, simple small and extensible
+* Configured with yaml files
+* Includes hooks for python code if needed
+* Supports multiple screens
+* Includes asynchronous main loop so no widgets can block entire WM
+* Includes dmenu-like thing:
+    * Starts instantly without skipping first few keystrokes
+    * Some fuzzy matching is implemented, search not only with a prefix
+
+
+To be Implemented Soon
+----------------------
+
+* Tabs for window navigation (probably not tied to particular layout)
+* Auto-update screen layout when adding/removing a display
+* Better test coverage
+
+
 Dependencies
 ------------
 
- * python3
- * python-greenlet
- * xcb-proto (package containing `/usr/share/xcb/*.xml`)
- * zorro (http://github.com/tailhook/zorro)
- * pycairo (patched to support get_data(), http://github.com/tailhook/pycairo)
+* python3
+* python-greenlet
+* xcb-proto (package containing `/usr/share/xcb/*.xml`)
+* zorro (http://github.com/tailhook/zorro)
+* pycairo (patched to support get_data(), http://github.com/tailhook/pycairo)
 
 .. note::
 
     Tilenol includes pure-python implementation of xcb, so only xml files are
     needed
+
 
 Running
 -------
@@ -24,5 +47,6 @@ Running
 After installing python package. You may want to copy ``examples/*.yaml`` into
 ``/etc/xdg/tilenol`` or ``~/.config/tilenol`` before starting, as tilenol is
 non-functional without a configuration.
+
 
 
