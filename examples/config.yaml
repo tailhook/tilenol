@@ -1,0 +1,52 @@
+# Main cofiguration file
+#
+# it's used to configure groups, although can be used to extend or
+# override some configuration given in another file
+
+groups:
+  1: Tile
+  2: Max
+  3: Tile
+  4: Tile
+  5: Tile
+  gimp: Gimp
+  im: IM_Twitter
+  max: Max
+
+# Extra layouts to be turned on on demand
+#
+# extra_layouts:
+#  - TestTilenol
+
+# Extra hotkeys
+#
+# keys:
+#   # restart tilenol in emergency way
+#   <WS-Q>: env shell killall -QUIT tilenol
+#   # execute a gadget defined below
+#   <WS-p>: search_command_line show
+
+# Override bars with single toolbar having only Clock
+#
+# bars:
+# - screen: 0
+#   position: top
+#   left:
+#   - Clock
+
+# Extra rules: the one to test tilenol itself on TestTilenol layout
+#
+# rules:
+#   Xephyr:
+#   - layout-properties:
+#       stack: xephyr
+
+# Override or add extra gadgets
+#
+# gadgets:
+#   find_window:
+#     =: FindWindow
+#     max_lines: 20  # more lines total
+#  search_command_line:
+#     =: SelectExecutable
+#     max_lines: 100  # a screenful of commands for easier search

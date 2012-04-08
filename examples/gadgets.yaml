@@ -1,0 +1,12 @@
+# This one pops up a menu to select executable from ``PATH``
+# then it runs a command with a shell, so can be used to run complex
+# command-lines too
+command_line: SelectExecutable
+
+# This one pops a menu to select a layout for the current screen
+select_layout: SelectLayout
+
+# FindWindow gadget searches for window by it's title and switches to that
+# workspace. (Switching layout to show that window is not implemented at the
+# moment)
+find_window: FindWindow

@@ -1,0 +1,16 @@
+- screen: 0
+  position: top
+  left:
+  - Groupbox:
+      first_letter: yes
+  - -----------
+  - Icon
+  - Title
+  right:
+  - -----------
+  - Battery
+  - CPUGraph
+  - MemoryGraph
+  - SwapGraph
+  - -----------
+  - Clock

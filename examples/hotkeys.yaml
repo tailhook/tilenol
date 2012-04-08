@@ -1,0 +1,82 @@
+# Shortcuts in this file written in manner, similar to vim mappings. There are
+# modifiers:
+#
+#   * W - Mod4 (usually a Win key)
+#   * S - Shift
+#   * C - Ctrl
+#
+# Keys with modifiers are prepended with modifier key and a dash:
+#
+#   * W-1 -- Mod4 and 1 digit
+#   * WS-a -- Mod4 + Shift + letter a
+#
+# Note: for shift modifier you must not uppercase letter specified
+#
+# Keys are called with their Xkeysym spelling. The rule of thumb is: letters
+# and digits are spelled as is, and other keys you can look at:
+#
+#   * /usr/include/X11/keysymdef.h
+#   * /usr/include/X11/XF86keysym.h  (for multimedia keys)
+#
+# Every command in this file is space separated sequence of:
+#
+#    object command [arg1 [arg2 ...]]
+#
+# For example ``env`` object is in charge for running a command, so the
+# following executes a terminal command:
+<W-o>: env exec terminal
+# The only way to discover which command supports which object at the moment
+# is grep for `cmd_*` methods in the respective classes
+
+
+# Menu gadgets, they are configured in ``gadgets.yaml``
+<W-p>: command_line show
+<W-a>: select_layout show
+<W-f>: find_window show
+
+# Group switch commands
+# They are not provided automatically, but hopefully you don't create them
+# too often
+<W-1>: groups switch 1
+<WS-1>: groups move_window_to 1
+<W-2>: groups switch 2
+<WS-2>: groups move_window_to 2
+<W-3>: groups switch 3
+<WS-3>: groups move_window_to 3
+<W-4>: groups switch 4
+<WS-4>: groups move_window_to 4
+<W-5>: groups switch 5
+<WS-5>: groups move_window_to 5
+<W-g>: groups switch gimp
+<WS-g>: groups move_window_to gimp
+<W-i>: groups switch im
+<WS-i>: groups move_window_to im
+<W-m>: groups switch max
+<WS-m>: groups move_window_to max
+
+# Current layout, window and screen commands
+<W-k>: layout up
+<W-j>: layout down
+<W-h>: layout left
+<W-l>: layout right
+<W-Tab>: group focus_next
+<WS-Tab>: group focus_prev
+<W-c>: window close
+<WS-c>: window kill
+<W-t>: window make_tiled
+<WC-q>: tilenol restart
+<W-w>: screen.0 focus
+<W-e>: screen.1 focus
+<W-r>: screen.2 focus
+<W-b>: screen toggle_bars
+<WS-b>: screen toggle_bars
+
+# Multimedia Keys
+<XF86AudioMute>: env exec amixer sset Master toggle
+<XF86AudioLowerVolume>: env exec amixer sset Master 5%-
+<XF86AudioRaiseVolume>: env exec amixer sset Master 5%+
+<S-XF86AudioMute>: env exec mpc toggle
+<S-XF86AudioLowerVolume>: env exec mpc volume -5
+<S-XF86AudioRaiseVolume>: env exec mpc volume +5
+
+

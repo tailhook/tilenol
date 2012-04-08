@@ -1,0 +1,67 @@
+global:
+
+# different kinds of windows, which should not be tiled
+- match-type:
+  - UTILITY
+  - NOTIFICATION
+  - TOOLBAR
+  - SPLASH
+  layout-properties:
+    floating: yes
+
+# move transient (dialog) windows to the group of their respective owner
+- has-property: WM_TRANSIENT_FOR
+  move-to-group-of: WM_TRANSIENT_FOR
+
+# customizations for IM laout
+- match-role:
+  - buddy_list  # for pidgin
+  - roster  # for gajim
+  layout-properties:
+    stack: roster
+
+
+### GIMP ###
+#
+# This is customization for Gimp layout
+#
+# Note, we need to set `floating: no` for some gimp windows, since they are
+# utility windows
+
+Gimp:
+- move-to-group: g
+- match-role: gimp-toolbox
+  layout-properties:
+    stack: toolbox
+    floating: no
+- match-role: gimp-dock
+  layout-properties:
+    stack: dock
+    floating: no
+
+
+### OPEN OFFICE ###
+
+# Unfortunately there is no good way to distinguish from different kinds
+# of open-office windows, so we do all of them floating, except DocumentWindow
+
+VCLSalFrame:
+- layout-properties:
+    floating: yes
+
+VCLSalFrame.DocumentWindow:
+- layout-properties:
+    floating: no
+
+
+### JAVA ###
+#
+# Java apps seem to set hints to the size of window, when user resized it
+# it doesn't work nice, since user can never make windows bigger any more
+#
+# So we just ignore hints to java windows
+
+sun-awt-X11:
+- ignore-hints: yes
+
+
