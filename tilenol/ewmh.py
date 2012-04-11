@@ -58,5 +58,10 @@ def match_type(*types):
                 return True
     return type_checker
 
+def get_title(win):
+    return (win.props.get('_NET_WM_NAME')
+            or win.props.get('WM_NAME')
+            or win.lprops.custom_name)
+
 
 from .window import Window # cyclic dependency

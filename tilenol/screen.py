@@ -29,8 +29,22 @@ class Screen(object):
     def __init__(self):
         self.topbars = []
         self.bottombars = []
+        self.leftslices = []
+        self.rightslices = []
         self.updated = Event('screen.updated')
         self.bars_visible = True
+        self.group_hooks = []
+
+    def add_group_hook(self, fun):
+        self.group_hooks.append(fun)
+
+    def remove_group_hook(self, fun):
+        self.group_hooks.remove(fun)
+
+    def set_group(self, group):
+        self.group = group
+        for h in self.group_hooks:
+            h()
 
     def cmd_focus(self):
         self.group.focus()
@@ -46,6 +60,13 @@ class Screen(object):
             for bar in self.bottombars:
                 h -= bar.height
                 bar.set_bounds(Rectangle(x, y+h, w, bar.height))
+            for gadget in self.leftslices:
+                gadget.set_bounds(Rectangle(x, y, gadget.width, h))
+                x += gadget.width
+                w -= gadget.width
+            for gadget in self.rightslices:
+                w -= gadget.width
+                gadget.set_bounds(Rectangle(x+w, y, gadget.width, h))
         self.inner_bounds = Rectangle(x, y, w, h)
         self.updated.emit()
 
@@ -63,6 +84,16 @@ class Screen(object):
     def add_bottom_bar(self, bar):
         if bar not in self.bottombars:
             self.bottombars.append(bar)
+        self.set_bounds(self.bounds)
+
+    def slice_left(self, obj):
+        if obj not in self.leftslices:
+            self.leftslices.append(obj)
+        self.set_bounds(self.bounds)
+
+    def slice_right(self, obj):
+        if obj not in self.rightslices:
+            self.rightslices.append(obj)
         self.set_bounds(self.bounds)
 
     def cmd_toggle_bars(self):

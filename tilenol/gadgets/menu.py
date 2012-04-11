@@ -13,6 +13,7 @@ from tilenol.window import DisplayWindow
 from tilenol.events import EventDispatcher
 from tilenol.event import Event
 from tilenol.config import Config
+from tilenol.ewmh import get_title
 
 
 @has_dependencies
@@ -211,8 +212,7 @@ class FindWindow(Select):
         items = []
         for g in self.commander['groups'].groups:
             for win in g.all_windows:
-                t = (win.props.get('_NET_WM_NAME')
-                    or win.props.get('WM_NAME')
+                t = (get_title(win)
                     or win.props.get('WM_ICON_NAME')
                     or win.props.get('WM_CLASS'))
                 items.append((t, win))

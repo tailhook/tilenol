@@ -18,7 +18,6 @@ class GroupManager(object):
         self.groups = list(groups)
         self.by_name = {g.name: g for g in self.groups}
         self.group_changed = Event('group-manager.group_changed')
-        self.window_added = Event('group-manager.window_added')
         for g in self.groups:
             g.manager = self
 
@@ -47,7 +46,6 @@ class GroupManager(object):
             ngr = self.current_groups[self.screenman.screens[0]]
         ngr.add_window(win)
         win.lprops.group = self.groups.index(ngr)
-        self.window_added.emit()
 
     def cmd_switch(self, name):
         ngr = self.by_name[name]
@@ -81,7 +79,6 @@ class GroupManager(object):
         win.hide()
         ngr.add_window(win)
         win.lprops.group = self.groups.index(ngr)
-        self.window_added.emit()
 
 
 @has_dependencies
@@ -98,6 +95,7 @@ class Group(object):
         self.floating_windows = []
         self.all_windows = []
         self._screen = None
+        self.windows_changed = Event('group.windows_changed')
 
     def __zorro_di_done__(self):
         di(self).inject(self.current_layout)
@@ -133,6 +131,7 @@ class Group(object):
         win.group = self
         self.all_windows.append(win)
         self.check_focus()
+        self.windows_changed.emit()
 
     def remove_window(self, win):
         assert win.group == self
@@ -142,6 +141,7 @@ class Group(object):
             self.current_layout.remove(win)
         self.all_windows.remove(win)
         del win.group
+        self.windows_changed.emit()
 
     def hide(self):
         self.current_layout.hide()
@@ -158,7 +158,7 @@ class Group(object):
             self._screen.updated.unlisten(self.update_size)
         self._screen = screen
         if screen is not None:
-            screen.group = self
+            screen.set_group(self)
             screen.updated.listen(self.update_size)
             self.set_bounds(screen.inner_bounds)
 

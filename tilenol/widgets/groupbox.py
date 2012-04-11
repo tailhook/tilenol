@@ -29,7 +29,8 @@ class Groupbox(Widget):
         self.padding = bar.text_padding
         self.border_width = bar.border_width
         self.gman.group_changed.listen(self.bar.redraw.emit)
-        self.gman.window_added.listen(self.bar.redraw.emit)
+        for g in self.gman.groups:
+            g.windows_changed.listen(self.bar.redraw.emit)
 
     def draw(self, canvas, l, r):
         assert not self.right, "Sorry, right not implemented"

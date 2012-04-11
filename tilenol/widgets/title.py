@@ -7,6 +7,7 @@ import cairo
 from .base import Widget
 from tilenol.commands import CommandDispatcher
 from tilenol.theme import Theme
+from tilenol.ewmh import get_title
 
 
 @has_dependencies
@@ -42,8 +43,7 @@ class Title(Widget):
         self.font.apply(canvas)
         canvas.move_to(l + self.padding.left,
                        self.height - self.padding.bottom)
-        canvas.show_text(win.props.get('_NET_WM_NAME')
-            or win.props.get('WM_NAME') or '')
+        canvas.show_text(get_title(win) or '')
         return r, r
 
 

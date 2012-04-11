@@ -111,6 +111,18 @@ class Theme(SubTheme):
         self.hint.border_width = 2
         self.hint.padding = Padding(5, 6, 9, 6)
 
+        self.tabs = SubTheme('tabs')
+        self.tabs.font = Font('Monofur', 12)
+        self.tabs.set_color('background', black)
+        self.tabs.set_color('inactive_title', gray)
+        self.tabs.set_color('inactive_bg', black)
+        self.tabs.set_color('active_title', white)
+        self.tabs.set_color('active_bg', blue)
+        self.tabs.padding = Padding(5, 6, 5, 8)
+        self.tabs.margin = Padding(4, 4, 4, 4)
+        self.tabs.border_radius = 5
+        self.tabs.spacing = 2
+
     def update_from(self, dic):
         if 'window' in dic:
             self.window.update_from(dic['window'])
