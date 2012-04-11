@@ -91,9 +91,19 @@ class Screen(object):
             self.leftslices.append(obj)
         self.set_bounds(self.bounds)
 
+    def unslice_left(self, obj):
+        if obj in self.leftslices:
+            self.leftslices.remove(obj)
+        self.set_bounds(self.bounds)
+
     def slice_right(self, obj):
         if obj not in self.rightslices:
             self.rightslices.append(obj)
+        self.set_bounds(self.bounds)
+
+    def unslice_right(self, obj):
+        if obj in self.rightslices:
+            self.leftslices.remove(obj)
         self.set_bounds(self.bounds)
 
     def cmd_toggle_bars(self):

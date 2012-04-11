@@ -19,7 +19,7 @@ class LeftBar(object):
     dispatcher = dependency(EventDispatcher, 'event-dispatcher')
     commander = dependency(CommandDispatcher, 'commander')
 
-    def __init__(self, screen, width):
+    def __init__(self, screen, width, groups):
         self.screen = screen
         self.width = width
         self._cairo = None
@@ -29,6 +29,8 @@ class LeftBar(object):
         self.redraw = Event('leftbar.redraw')
         self.redraw.listen(self._redraw)
         self.screen.add_group_hook(self._group_hook)
+        self.visible = False
+        self.groups = groups
 
     def __zorro_di_done__(self):
         wid = self.xcore.create_toplevel(Rectangle(0, 0, 1, 1),
@@ -55,6 +57,8 @@ class LeftBar(object):
         self._img = None
 
     def _redraw(self):
+        if not self.visible:
+            return
         drawn_windows = set()
         if self._img is None:
             self._img = self.xcore.pixbuf(self.width, self.bounds.height)
@@ -111,22 +115,70 @@ class LeftBar(object):
     def _group_hook(self):
         if self._oldgroup:
             self._oldgroup.windows_changed.unlisten(self.redraw.emit)
-        self.screen.group.windows_changed.listen(self.redraw.emit)
-        self._oldgroup = self.screen.group
+        ngr = self.screen.group
+        ngr.windows_changed.listen(self.redraw.emit)
+        self._oldgroup = ngr
+        if ngr.name in self.groups:
+            self.show()
+        else:
+            self.hide()
+
+    def show(self):
+        if not self.visible:
+            self.visible = True
+            self.window.show()
+            self.screen.slice_left(self)
+
+    def hide(self):
+        # TODO (tailhook) unsubscribe
+        if self.visible:
+            self.visible = False
+            self.screen.unslice_left(self)
+            self.window.hide()
+            self._cairo = None
+            self._img = None
 
 
 @has_dependencies
 class Tabs(GadgetBase):
 
     screens = dependency(ScreenManager, 'screen-manager')
+    commander = dependency(CommandDispatcher, 'commander')
 
-    def __init__(self, width=256):
+    def __init__(self, width=256, groups=()):
         self.bars = {}
+        self.groups = set(groups)
         self.width = width
 
     def __zorro_di_done__(self):
         for s in self.screens.screens:
-            bar = di(self).inject(LeftBar(s, self.width))
+            bar = di(self).inject(LeftBar(s, self.width, self.groups))
             self.bars[s] = bar
-            s.slice_left(bar)
+            if s.group.name in self.groups:
+                s.slice_left(bar)
+
+    def cmd_toggle(self):
+        gr = self.commander['group']
+        if gr.name in self.groups:
+            self.groups.remove(gr.name)
+        else:
+            self.groups.add(gr.name)
+        self._update_bars()
+
+    def cmd_show(self):
+        gr = self.commander['group']
+        self.groups.add(gr.name)
+        self._update_bars()
+
+    def cmd_hide(self):
+        if gr.name in self.groups:
+            self.groups.remove(gr.name)
+        self._update_bars()
+
+    def _update_bars(self):
+        for s, bar in self.bars.items():
+            if s.group.name in self.groups:
+                bar.show()
+            else:
+                bar.hide()
 
