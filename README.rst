@@ -19,12 +19,12 @@ Features
     * Some fuzzy matching is implemented, search not only with a prefix
 * Has rich window classification rules to make windows floating and to put them
   into right places
+* Tabs for window navigation (works for any layout)
 
 
 To be Implemented Soon
 ----------------------
 
-* Tabs for window navigation (probably not tied to particular layout)
 * Auto-update screen layout when adding/removing a display
 * Better test coverage
 
