@@ -176,7 +176,7 @@ class Config(object):
             w = []
             for winfo in reversed(binfo.pop('right', ())):
                 if isinstance(winfo, dict):
-                    for typ, params in winfo:
+                    for typ, params in winfo.items():
                         break
                 else:
                     typ = winfo
