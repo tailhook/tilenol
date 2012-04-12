@@ -529,6 +529,13 @@ class Frame(Window):
             self.xcore.CW.BorderPixel: self.theme.window.active_border,
         })
 
+    def pointer_enter(self):
+        self.commander['pointer_window'] = self.content
+
+    def pointer_leave(self):
+        if self.commander.get('pointer_window') == self.content:
+            del self.commander['pointer_window']
+
     def hide(self):
         if self.commander.get('window') == self.content:
             del self.commander['window']

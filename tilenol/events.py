@@ -74,19 +74,31 @@ class EventDispatcher(object):
                 self.groupman.add_window(win)
 
     def handle_EnterNotifyEvent(self, ev):
-        if self.active_field:
+        if self.mouse.drag:
             return
         try:
             win = self.frames[ev.event]
         except KeyError:
             log.warning("Enter notify for non-existent window %r", ev.event)
         else:
+            if ev.mode != self.xcore.NotifyMode.Grab:
+                win.pointer_enter()
+            if self.active_field:
+                return
             if(win.props.get("WM_HINTS") is None
                 or win.props.get('WM_HINTS')[0] & 1):
                 win.focus()
 
     def handle_LeaveNotifyEvent(self, ev):
-        pass  # nothing to do at the moment
+        if self.mouse.drag:
+            return
+        try:
+            win = self.frames[ev.event]
+        except KeyError:
+            log.warning("Leave notify for non-existent window %r", ev.event)
+        else:
+            if ev.mode != self.xcore.NotifyMode.Grab:
+                win.pointer_leave()
 
     def handle_MapNotifyEvent(self, ev):
         try:
@@ -161,10 +173,13 @@ class EventDispatcher(object):
         self.xcore.raw.ChangeWindowAttributes(window=win, params={
                 self.xcore.CW.EventMask: self.xcore.EventMask.PropertyChange
             })
-        for name in self.xcore.raw.ListProperties(window=win)['atoms']:
-            win.update_property(name)
         self.windows[win.wid] = win
         self.all_windows[win.wid] = win
+        try:
+            for name in self.xcore.raw.ListProperties(window=win)['atoms']:
+                win.update_property(name)
+        except XError:
+            log.warning("Window destroyed immediately %d", win.wid)
 
     def handle_ConfigureNotifyEvent(self, ev):
         pass

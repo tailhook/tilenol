@@ -168,9 +168,9 @@ class MouseRegistry(object):
                     )
 
     def dispatch_button_press(self, ev):
-        if 'window' not in self.commander:
+        if 'pointer_window' not in self.commander:
             return
-        win = self.commander['window']
+        win = self.commander['pointer_window']
         if not win.lprops.floating:
             win.make_floating()
         else:
