@@ -64,4 +64,11 @@ VCLSalFrame.DocumentWindow:
 sun-awt-X11:
 - ignore-hints: yes
 
+### Skype ###
+#
+# Skype declares that it supports WM_TAKE_FOCUS, but in fact it does not
+# so let's just ignore it
+skype:
+- ignore-protocols: WM_TAKE_FOCUS
+
 

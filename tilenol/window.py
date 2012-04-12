@@ -82,6 +82,8 @@ class Window(object):
         self.props = {}
         self.lprops = LayoutProperties(self)
         self.property_changed = Event('window.property_changed')
+        self.protocols = set()
+        self.ignore_protocols = set()
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.wid)
@@ -219,7 +221,7 @@ class Window(object):
 
     def focus(self):
         self.done.focus = True
-        if self.xcore.atom.WM_TAKE_FOCUS in self.props.get('WM_PROTOCOLS', ()):
+        if "WM_TAKE_FOCUS" in self.protocols:
             self.send_event('ClientMessage',
                 window=self,
                 type=self.xcore.atom.WM_PROTOCOLS,
@@ -238,6 +240,10 @@ class Window(object):
     def _set_property(self, name, typ, value):
         if name == 'WM_NORMAL_HINTS':
             self.want.hints = SizeHints.from_property(typ, value)
+        if name == 'WM_PROTOCOLS':
+            self.protocols = set(self.xcore.atom[p].name
+                                 for p in value
+                                 if p not in self.ignore_protocols)
         if name in self.lprops.long_to_short:
             if isinstance(value, tuple) and len(value) == 1:
                 value = value[0]

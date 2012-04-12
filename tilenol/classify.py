@@ -69,6 +69,13 @@ def ignore_hints(ignore):
     return setter
 
 
+def ignore_protocols(*ignore):
+    def setter(win):
+        win.ignore_protocols.update(ignore)
+        win.protocols -= win.ignore_protocols
+    return setter
+
+
 def move_to_group_of(prop):
     def setter(win):
         wid = win.props[prop][0]
@@ -93,6 +100,7 @@ all_conditions = {
 all_actions = {
     'layout-properties': layout_properties,
     'ignore-hints': ignore_hints,
+    'ignore-protocols': ignore_protocols,
     'move-to-group-of': move_to_group_of,
     'move-to-group': move_to_group,
     }
