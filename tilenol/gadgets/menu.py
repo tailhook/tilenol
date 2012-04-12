@@ -139,8 +139,8 @@ class Select(GadgetBase):
         value = None
         for matched, opcodes, value in self.match_lines(input):
             break
-        self._close()
         self.submit(input, matched, value)
+        self._close()
 
     def _close(self):
         if self.window:
@@ -220,3 +220,41 @@ class FindWindow(Select):
 
     def submit(self, input, matched, value):
         self.commander['groups'].cmd_switch(value.group.name)
+
+
+@has_dependencies
+class RenameWindow(Select):
+
+    commander = dependency(CommandDispatcher, 'commander')
+
+    def items(self):
+        win = self._target_window
+        titles = [
+            win.props.get("_NET_WM_VISIBLE_NAME"),
+            win.props.get("_NET_WM_NAME"),
+            win.props.get("WM_NAME"),
+            win.props.get("WM_ICON_NAME"),
+            win.props.get("WM_CLASS").replace('\0', ' '),
+            win.props.get("WM_WINDOW_ROLE"),
+            ]
+        res = []
+        for t in titles:
+            if not t: continue
+            if res and res[-1][0] == t: continue
+            res.append((t, t))
+        return res
+
+    def submit(self, input, matched, value):
+        self._target_window.set_property('_NET_WM_VISIBLE_NAME', input)
+
+    def cmd_show(self):
+        self._target_window = self.commander['window']
+        super().cmd_show()
+
+    def _close(self):
+        super()._close()
+        if hasattr(self, '_target_window'):
+            del self._target_window
+
+    def cmd_clear_name(self):
+        self.commander['window'].set_property('_NET_WM_VISIBLE_NAME', None)

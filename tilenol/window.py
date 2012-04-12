@@ -296,6 +296,10 @@ class Window(object):
                 type=self.xcore.atom.UTF8_STRING,
                 format=8,
                 data=value)
+        elif value is None:
+            self.xcore.raw.DeleteProperty(
+                window=self,
+                property=getattr(self.xcore.atom, name))
         else:
             raise NotImplementedError(value)
 
