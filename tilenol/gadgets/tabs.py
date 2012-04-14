@@ -77,6 +77,7 @@ class LeftBar(object):
             drawn_windows.add(win)
             sx, sy, tw, th, ax, ay = ctx.text_extents(title)
             fh = th + theme.padding.top + theme.padding.bottom
+            # Background
             if focused is win:
                 ctx.set_source(theme.active_bg_pat)
             else:
@@ -93,12 +94,21 @@ class LeftBar(object):
             ctx.line_to(self.width, y + fh)
             ctx.close_path()
             ctx.fill()
+            # Icon
+            if hasattr(win, 'icons'):
+                win.draw_icon(ctx,
+                    theme.margin.left + theme.padding.left,
+                    y + (th + theme.padding.top + theme.padding.bottom
+                         - theme.icon_size)//2,
+                    theme.icon_size)
+            # Title
             if focused is win:
                 ctx.set_source(theme.active_title_pat)
             else:
                 ctx.set_source(theme.inactive_title_pat)
-            ctx.move_to(theme.margin.left + theme.padding.left,
-                        y + theme.padding.top + th)
+            x = theme.margin.left + theme.padding.left
+            x += theme.icon_size + theme.icon_spacing
+            ctx.move_to(x, y + theme.padding.top + th)
             y += th + theme.spacing + theme.padding.top + theme.padding.bottom
             ctx.show_text(title)
             ctx.fill()

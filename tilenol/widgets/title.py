@@ -1,5 +1,3 @@
-import array
-
 from zorro.di import di, has_dependencies, dependency
 from cairo import SolidPattern
 import cairo
@@ -72,28 +70,11 @@ class Icon(Widget):
         if not win or not getattr(win, 'icons', None):
             return l, r
         h = self.height - self.padding.bottom - self.padding.top
-        for iw, ih, data in win.icons:
-            if iw >= h or ih >= h:
-                break
-        scale = min(iw/h, ih/h)
-        data = array.array('I', data)
-        assert data.itemsize == 4
-        surf = cairo.ImageSurface.create_for_data(memoryview(data),
-            cairo.FORMAT_ARGB32, iw, ih, iw*4)
         if self.right:
             x = r - self.padding.right - h
         else:
             x = l + self.padding.left
-        y = self.padding.top
-        pat = cairo.SurfacePattern(surf)
-        pat.set_matrix(cairo.Matrix(
-            xx=scale, yy=scale,
-            x0=-x*scale, y0=-y*scale))
-        pat.set_filter(cairo.FILTER_GOOD)
-        canvas.set_source(pat)
-        canvas.rectangle(x, y, h, h)
-        canvas.scale(scale, scale)
-        canvas.fill()
+        win.draw_icon(canvas, x, self.padding.top, h)
         if self.right:
             return l, r - h - self.padding.left - self.padding.right
         else:

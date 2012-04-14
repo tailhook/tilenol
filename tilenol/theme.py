@@ -118,10 +118,12 @@ class Theme(SubTheme):
         self.tabs.set_color('inactive_bg', black)
         self.tabs.set_color('active_title', white)
         self.tabs.set_color('active_bg', blue)
-        self.tabs.padding = Padding(5, 6, 6, 8)
+        self.tabs.padding = Padding(5, 6, 6, 4)
         self.tabs.margin = Padding(4, 4, 4, 4)
         self.tabs.border_radius = 5
         self.tabs.spacing = 2
+        self.tabs.icon_size = 14
+        self.tabs.icon_spacing = 6
 
     def update_from(self, dic):
         if 'window' in dic:

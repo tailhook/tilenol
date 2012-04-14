@@ -1,3 +1,4 @@
+import array
 from collections import namedtuple
 import struct
 import logging
@@ -257,15 +258,40 @@ class Window(object):
         elif name == '_NET_WM_ICON':
             icons = self.icons = []
             lst = list(value)
+            def cvt(px):
+                a = px >> 24
+                k = a / 255.0
+                r = (px >> 16) & 0xff
+                g = (px >> 8) & 0xff
+                b = px & 0xff
+                return (a<<24) | (int(r*k)<<16) | (int(g*k)<<8) | int(b*k)
             while lst:
                 w = lst.pop(0)
                 h = lst.pop(0)
-                idata = lst[:w*h]
+                idata = [cvt(px) for px in lst[:w*h]]
                 del lst[:w*h]
                 icons.append((w, h, idata))
             icons.sort()
         self.props[name] = value
         self.property_changed.emit()
+
+    def draw_icon(self, canvas, x, y, size):
+        for iw, ih, data in self.icons:
+            if iw >= size or ih >= size:
+                break
+        scale = min(iw/size, ih/size)
+        data = array.array('I', data)
+        assert data.itemsize == 4
+        surf = cairo.ImageSurface.create_for_data(memoryview(data),
+            cairo.FORMAT_ARGB32, iw, ih, iw*4)
+        pat = cairo.SurfacePattern(surf)
+        pat.set_matrix(cairo.Matrix(
+            xx=scale, yy=scale,
+            x0=-x*scale, y0=-y*scale))
+        pat.set_filter(cairo.FILTER_BEST)
+        canvas.set_source(pat)
+        canvas.rectangle(x, y, size, size)
+        canvas.fill()
 
     def set_property(self, name, value):
         if isinstance(value, int):
