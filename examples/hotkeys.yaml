@@ -33,6 +33,8 @@
 <W-p>: command_line show
 <W-a>: select_layout show
 <W-f>: find_window show
+<W-n>: rename_window show
+<WC-b>: tabs toggle
 
 # Group switch commands
 # They are not provided automatically, but hopefully you don't create them
@@ -69,7 +71,7 @@
 <W-e>: screen.1 focus
 <W-r>: screen.2 focus
 <W-b>: screen toggle_bars
-<WS-b>: screen toggle_bars
+<WS-b>: window toggle_border
 
 # Multimedia Keys
 <XF86AudioMute>: env exec amixer sset Master toggle

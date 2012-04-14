@@ -10,3 +10,15 @@ select_layout: SelectLayout
 # workspace. (Switching layout to show that window is not implemented at the
 # moment)
 find_window: FindWindow
+
+# Rename window gadget allows to change window title
+rename_window: RenameWindow
+
+# Tabs gadget shows list of windows on the left of the screen, for the groups
+# specified in `groups` parameter
+tabs:
+  =: Tabs
+  width: 200
+  # no groups enabled by default, you can use hotkey to toggle
+  #groups: [1, 2, im]
+
