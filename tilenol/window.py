@@ -12,13 +12,16 @@ from .commands import CommandDispatcher
 from .ewmh import Ewmh
 from .event import Event
 from .theme import Theme
+from .screen import ScreenManager
 
 
 log = logging.getLogger(__name__)
 
 
 class SizeRequest(object):
-    def __init__(self, x, y, width, height, border):
+    def __init__(self, x, y, width, height, border=0):
+        self.pivot_x = None
+        self.pivot_y = None
         self.x = x
         self.y = y
         self.width = width
@@ -34,6 +37,12 @@ class SizeRequest(object):
             height=notify.height,
             border=notify.border_width,
             )
+
+    def calc_pivot(self, screenman):
+        for scr in screenman.screens:
+            if scr.bounds.containsxy(self.x, self.y):
+                self.pivot_x = scr.bounds.x
+                self.pivot_y = scr.bounds.y
 
 
 class State(object):
@@ -70,6 +79,7 @@ class Window(object):
     xcore = dependency(Core, 'xcore')
     ewmh = dependency(Ewmh, 'ewmh')
     theme = dependency(Theme, 'theme')
+    screens = dependency(ScreenManager, 'screen-manager')
 
     border_width = 0
     ignore_hints = False
@@ -97,6 +107,10 @@ class Window(object):
         win.want.size = SizeRequest.from_notify(notify)
         return win
 
+    def __zorro_di_done__(self):
+        if self.want.size:
+            self.want.size.calc_pivot(self.screens)
+
     def update_size_request(self, req):
         msk = self.xcore.ConfigWindow
         sr = self.want.size
@@ -104,6 +118,7 @@ class Window(object):
             sr.x = req.x
         if req.value_mask & msk.Y:
             sr.y = req.y
+        # TODO(tailhook) maybe update pivot point
         if req.value_mask & msk.Width:
             sr.width = req.width
         if req.value_mask & msk.Height:
@@ -566,6 +581,11 @@ class Frame(Window):
         if self.commander.get('pointer_window') == self.content:
             del self.commander['pointer_window']
 
+    def show(self):
+        if self.done.size:
+            self.configure_content(self.done.size)
+        super().show()
+
     def hide(self):
         if self.commander.get('window') == self.content:
             del self.commander['window']
@@ -630,6 +650,15 @@ class Frame(Window):
             return False
         self.configure_content(rect)
         return True
+
+    def set_screen(self, rect):
+        sz = self.done.size
+        if sz.pivot_x is not None and sz.pivot_y is not None:
+            self.set_bounds(Rectangle(
+                x=sz.x - sz.pivot_x + rect.x,
+                y=sz.y - sz.pivot_y + rect.y,
+                width=sz.width,
+                height=sz.height))
 
     def add_hint(self):
         res = di(self).inject(HintWindow(self.xcore.create_window(
