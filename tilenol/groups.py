@@ -123,8 +123,7 @@ class Group(object):
             # Ensure that floating windows are always above others
             win.frame.restack(win.xcore.StackMode.Above)
             self.floating_windows.append(win)
-            if self.screen:
-                win.show()
+            win.show()
         else:
             # Ensure that non-floating windows are always below floating
             win.frame.restack(win.xcore.StackMode.Below)
@@ -168,13 +167,14 @@ class Group(object):
 
     def set_bounds(self, rect):
         self.current_layout.set_bounds(rect)
-        for win in self.floating_windows:
-            win.frame.set_screen(rect)
+        #for win in self.floating_windows:
+        #    win.set_screen(rect)
 
     def show(self):
         self.current_layout.show()
         for win in self.floating_windows:
-            win.frame.set_screen(self.screen.bounds)
+            # TODO(tailhook) fix bounds when showing at different screen
+            #win.set_screen(self.bounds)
             win.show()
         self.check_focus()
 

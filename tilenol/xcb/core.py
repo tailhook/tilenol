@@ -33,10 +33,6 @@ fmtchar = {
 class Rectangle(namedtuple('_Rectangle', 'x y width height')):
     __slots__ = ()
 
-    def containsxy(self, x, y):
-        return (x > self.x and x < self.x + self.width and
-                y > self.y and y < self.y + self.height)
-
 
 class Const(int):
 

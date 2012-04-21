@@ -4,7 +4,7 @@ import cairo
 from zorro.di import di, has_dependencies, dependency
 
 from tilenol.xcb import Core, Rectangle
-from tilenol.window import DisplayWindow, SizeRequest
+from tilenol.window import DisplayWindow
 from tilenol.events import EventDispatcher
 from tilenol.event import Event
 from tilenol.theme import Theme
@@ -54,7 +54,7 @@ class Bar(object):
                 CW.EventMask: EM.Exposure | EM.SubstructureNotify,
                 CW.OverrideRedirect: True,
             }), self.expose)
-        self.window.want.size = SizeRequest(*self.bounds)
+        self.window.want.size = self.bounds
         di(self).inject(self.window)
         self.dispatcher.register_window(self.window)
         self.window.show()
