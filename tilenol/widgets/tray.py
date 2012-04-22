@@ -71,6 +71,8 @@ class Systray(Widget):
             win.reparent_to(self.bar.window)
             self.xcore.raw.ChangeWindowAttributes(window=win, params={
                 self.xcore.CW.BackPixel: self.theme.bar.background,
+                self.xcore.CW.EventMask:
+                    self.xcore.EventMask.ResizeRedirect,
             })
             self.icons.append(win)
             win.show()
