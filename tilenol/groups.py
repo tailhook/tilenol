@@ -123,7 +123,8 @@ class Group(object):
             # Ensure that floating windows are always above others
             win.frame.restack(win.xcore.StackMode.Above)
             self.floating_windows.append(win)
-            win.show()
+            if self.screen:
+                win.show()
         else:
             # Ensure that non-floating windows are always below floating
             win.frame.restack(win.xcore.StackMode.Below)
