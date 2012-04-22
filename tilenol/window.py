@@ -607,9 +607,7 @@ class Frame(Window):
                            getattr(hints, 'min_width', None))
             n = (width - base)//incr
             width = base + n*incr
-        if hasattr(hints, 'min_width') and width < hints.min_width:
-            width = hints.min_width
-        elif hasattr(hints, 'max_width') and width > hints.max_width:
+        if hasattr(hints, 'max_width') and width > hints.max_width:
             width = hints.max_width
         if hasattr(hints, 'height_inc'):
             incr = hints.height_inc
@@ -617,9 +615,7 @@ class Frame(Window):
                            getattr(hints, 'min_height', None))
             n = (height - base)//incr
             height = base + n*incr
-        if hasattr(hints, 'min_height') and height < hints.min_height:
-            height = hints.min_height
-        elif hasattr(hints, 'max_height') and height > hints.max_height:
+        if hasattr(hints, 'max_height') and height > hints.max_height:
             height = hints.max_height
         # TODO(tailhook) obey aspect ratio
         return width, height
