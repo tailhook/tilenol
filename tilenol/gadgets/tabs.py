@@ -56,6 +56,61 @@ class LeftBar(object):
         self._cairo = None
         self._img = None
 
+    def _draw_section(self, title, y):
+        ctx = self._cairo
+        theme = self.theme.tabs
+        ctx.set_source(theme.section_color_pat)
+        sx, sy, tw, th, ax, ay = ctx.text_extents(title)
+        y += theme.section_padding.top + th
+        x = self.width - theme.section_padding.right - tw
+        ctx.move_to(x, y)
+        ctx.show_text(title)
+        y += theme.section_padding.bottom
+        return y
+
+    def _draw_win(self, win, y, focused):
+        ctx = self._cairo
+        theme = self.theme.tabs
+        title = get_title(win) or win.props.get("WM_CLASS") or hex(win)
+        sx, sy, tw, th, ax, ay = ctx.text_extents(title)
+        fh = th + theme.padding.top + theme.padding.bottom
+        # Background
+        if focused:
+            ctx.set_source(theme.active_bg_pat)
+        else:
+            ctx.set_source(theme.inactive_bg_pat)
+        ctx.move_to(self.width, y)
+        ctx.line_to(theme.margin.left + theme.border_radius, y)
+        ctx.curve_to(theme.margin.left + theme.border_radius/3, y,
+            theme.margin.left, y + theme.border_radius/3,
+            theme.margin.left, y + theme.border_radius)
+        ctx.line_to(theme.margin.left, y + fh - theme.border_radius)
+        ctx.curve_to(theme.margin.left, y + fh - theme.border_radius/3,
+            theme.margin.left + theme.border_radius/3, y + fh,
+            theme.margin.left + theme.border_radius, y + fh)
+        ctx.line_to(self.width, y + fh)
+        ctx.close_path()
+        ctx.fill()
+        # Icon
+        if hasattr(win, 'icons'):
+            win.draw_icon(ctx,
+                theme.margin.left + theme.padding.left,
+                y + (th + theme.padding.top + theme.padding.bottom
+                     - theme.icon_size)//2,
+                theme.icon_size)
+        # Title
+        if focused:
+            ctx.set_source(theme.active_title_pat)
+        else:
+            ctx.set_source(theme.inactive_title_pat)
+        x = theme.margin.left + theme.padding.left
+        x += theme.icon_size + theme.icon_spacing
+        ctx.move_to(x, y + theme.padding.top + th)
+        y += th + theme.spacing + theme.padding.top + theme.padding.bottom
+        ctx.show_text(title)
+        ctx.fill()
+        return y
+
     def _redraw(self):
         if not self.visible:
             return
@@ -72,46 +127,23 @@ class LeftBar(object):
         gr = self.screen.group
         y = theme.margin.top
         focused = self.commander.get('window')
-        for win in gr.all_windows:
-            title = get_title(win) or win.props.get("WM_CLASS") or hex(win)
-            drawn_windows.add(win)
-            sx, sy, tw, th, ax, ay = ctx.text_extents(title)
-            fh = th + theme.padding.top + theme.padding.bottom
-            # Background
-            if focused is win:
-                ctx.set_source(theme.active_bg_pat)
-            else:
-                ctx.set_source(theme.inactive_bg_pat)
-            ctx.move_to(self.width, y)
-            ctx.line_to(theme.margin.left + theme.border_radius, y)
-            ctx.curve_to(theme.margin.left + theme.border_radius/3, y,
-                theme.margin.left, y + theme.border_radius/3,
-                theme.margin.left, y + theme.border_radius)
-            ctx.line_to(theme.margin.left, y + fh - theme.border_radius)
-            ctx.curve_to(theme.margin.left, y + fh - theme.border_radius/3,
-                theme.margin.left + theme.border_radius/3, y + fh,
-                theme.margin.left + theme.border_radius, y + fh)
-            ctx.line_to(self.width, y + fh)
-            ctx.close_path()
-            ctx.fill()
-            # Icon
-            if hasattr(win, 'icons'):
-                win.draw_icon(ctx,
-                    theme.margin.left + theme.padding.left,
-                    y + (th + theme.padding.top + theme.padding.bottom
-                         - theme.icon_size)//2,
-                    theme.icon_size)
-            # Title
-            if focused is win:
-                ctx.set_source(theme.active_title_pat)
-            else:
-                ctx.set_source(theme.inactive_title_pat)
-            x = theme.margin.left + theme.padding.left
-            x += theme.icon_size + theme.icon_spacing
-            ctx.move_to(x, y + theme.padding.top + th)
-            y += th + theme.spacing + theme.padding.top + theme.padding.bottom
-            ctx.show_text(title)
-            ctx.fill()
+        subs = list(gr.current_layout.sublayouts())
+        show_groups = len(subs) > 1 or gr.floating_windows
+        for sec in subs:
+            wins = sec.windows
+            if wins:
+                if show_groups:
+                    title = getattr(sec, 'title', sec.__class__.__name__)
+                    y = self._draw_section(title, y)
+                for win in wins:
+                    drawn_windows.add(win)
+                    y = self._draw_win(win, y, focused is win)
+        if gr.floating_windows:
+            if show_groups:
+                y = self._draw_section('floating', y)
+            for win in gr.floating_windows:
+                drawn_windows.add(win)
+                y = self._draw_win(win, y, focused is win)
         self._img.draw(self.window)
         # update subscriptions
         unsub = self._subscribed_windows - drawn_windows
