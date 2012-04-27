@@ -155,10 +155,10 @@ class LeftBar(object):
         self._subscribed_windows = drawn_windows
 
     def _group_hook(self):
-        if self._oldgroup:
-            self._oldgroup.windows_changed.unlisten(self.redraw.emit)
+        #if self._oldgroup:
+            #self._oldgroup.windows_changed.unlisten(self.redraw.emit)
         ngr = self.screen.group
-        ngr.windows_changed.listen(self.redraw.emit)
+        #ngr.windows_changed.listen(self.redraw.emit)
         self._oldgroup = ngr
         if ngr.name in self.groups:
             self.show()

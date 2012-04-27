@@ -13,6 +13,16 @@ PAspect		= (1 << 7)	# program specified min and max aspect ratios */
 PBaseSize	= (1 << 8)
 PWinGravity	= (1 << 9)
 
+InputHint   = 1
+StateHint   = 2
+IconPixmapHint = 4
+IconWindowHint = 8
+IconPositionHint = 16
+IconMaskHint = 32
+WindowGroupHint = 64
+MessageHint = 128
+UrgencyHint = 256
+
 
 class SizeHints(namedtuple('_SizeHints', ('flags', 'p1', 'p2', 'p3', 'p4',
     'min_width', 'min_height',
@@ -47,4 +57,11 @@ class SizeHints(object):
         if flags & PWinGravity:
             hints.win_gravity = arr[17]
         return hints
+
+
+def is_window_urgent(win):
+    hints = win.props.get('WM_HINTS')
+    if hints is None:
+        return False
+    return bool(hints[0] & UrgencyHint)
 

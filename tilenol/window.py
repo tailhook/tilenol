@@ -73,6 +73,7 @@ class Window(object):
 
     border_width = 0
     ignore_hints = False
+    any_window_changed = Event('Window.any_window_changed')
 
     def __init__(self, wid):
         self.wid = wid
@@ -133,6 +134,7 @@ class Window(object):
         if self.done.visible:
             return False
         self.done.visible = True
+        self.any_window_changed.emit()
         self.xcore.raw.MapWindow(window=self)
         if self.frame:
             self.ewmh.showing_window(self)
@@ -143,6 +145,7 @@ class Window(object):
         if not self.done.visible:
             return False
         self.done.visible = False
+        self.any_window_changed.emit()
         if self.frame:
             self.ewmh.hiding_window(self)
             self.frame.hide()
@@ -153,6 +156,7 @@ class Window(object):
     def set_bounds(self, rect):
         if self.done.size == rect:
             return False
+        self.any_window_changed.emit()
         if self.frame:
             self.frame.set_bounds(rect)
         else:
@@ -274,6 +278,7 @@ class Window(object):
             icons.sort()
         self.props[name] = value
         self.property_changed.emit()
+        self.any_window_changed.emit()
 
     def draw_icon(self, canvas, x, y, size):
         for iw, ih, data in self.icons:

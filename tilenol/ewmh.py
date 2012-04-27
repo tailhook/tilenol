@@ -58,6 +58,7 @@ def match_type(*types):
                 return True
     return type_checker
 
+
 def get_title(win):
     return (win.props.get('_NET_WM_VISIBLE_NAME')
             or win.props.get('_NET_WM_NAME')

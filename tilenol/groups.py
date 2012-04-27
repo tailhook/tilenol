@@ -4,6 +4,7 @@ from zorro.di import has_dependencies, dependency, di
 
 from .screen import ScreenManager
 from .event import Event
+from .icccm import is_window_urgent
 from .commands import CommandDispatcher
 from .config import Config
 
@@ -95,7 +96,6 @@ class Group(object):
         self.floating_windows = []
         self.all_windows = []
         self._screen = None
-        self.windows_changed = Event('group.windows_changed')
 
     def __zorro_di_done__(self):
         di(self).inject(self.current_layout)
@@ -132,7 +132,6 @@ class Group(object):
         win.group = self
         self.all_windows.append(win)
         self.check_focus()
-        self.windows_changed.emit()
 
     def remove_window(self, win):
         assert win.group == self
@@ -142,7 +141,6 @@ class Group(object):
             self.current_layout.remove(win)
         self.all_windows.remove(win)
         del win.group
-        self.windows_changed.emit()
 
     def hide(self):
         self.current_layout.hide()
@@ -190,6 +188,10 @@ class Group(object):
                 pass
             else:
                 win.frame.focus()
+
+    @property
+    def has_urgent_windows(self):
+        return any(is_window_urgent(win) for win in self.all_windows)
 
     def cmd_focus_next(self):
         all = list(self.current_layout.all_visible_windows())
