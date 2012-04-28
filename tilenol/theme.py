@@ -62,6 +62,7 @@ class Theme(SubTheme):
 
         blue = 0x4c4c99
         dark_blue = 0x191933
+        orange = 0x99994c
         gray = 0x808080
         red = 0x994c4c
         black = 0x000000
@@ -81,6 +82,7 @@ class Theme(SubTheme):
         self.bar.icon_spacing = 2
         self.bar.set_color('text_color', white)
         self.bar.set_color('dim_color', gray)
+        self.bar.set_color('bright_color', orange)
         self.bar.set_color('active_border', blue)
         self.bar.set_color('subactive_border', gray)
         self.bar.set_color('urgent_border', red)
@@ -118,6 +120,8 @@ class Theme(SubTheme):
         self.tabs.set_color('inactive_bg', black)
         self.tabs.set_color('active_title', white)
         self.tabs.set_color('active_bg', blue)
+        self.tabs.set_color('urgent_title', white)
+        self.tabs.set_color('urgent_bg', orange)
         self.tabs.section_font = Font('Monofur', 12)
         self.tabs.set_color('section_color', gray)
         self.tabs.padding = Padding(5, 6, 6, 4)

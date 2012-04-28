@@ -58,6 +58,7 @@ class Groupbox(Widget):
         bar = self.theme.bar
         self.font = bar.font
         self.inactive_color = bar.dim_color_pat
+        self.urgent_color = bar.bright_color_pat
         self.active_color = bar.text_color_pat
         self.selected_color = bar.active_border_pat
         self.subactive_color = bar.subactive_border_pat
@@ -83,7 +84,9 @@ class Groupbox(Widget):
             if self.first_letter:
                 gname = gname[0]
             sx, sy, w, h, ax, ay = canvas.text_extents(gname)
-            if gs.empty:
+            if gs.urgent:
+                canvas.set_source(self.urgent_color)
+            elif gs.empty:
                 canvas.set_source(self.inactive_color)
             else:
                 canvas.set_source(self.active_color)
