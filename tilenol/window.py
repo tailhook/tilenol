@@ -153,8 +153,8 @@ class Window(object):
             self.xcore.raw.UnmapWindow(window=self)
         return True
 
-    def set_bounds(self, rect):
-        if self.done.size == rect:
+    def set_bounds(self, rect, force=False):
+        if not force and self.done.size == rect:
             return False
         self.any_window_changed.emit()
         if self.frame:
@@ -387,6 +387,8 @@ class Window(object):
         self.xcore.raw.ConfigureWindow(window=self, params={
                 self.xcore.ConfigWindow.BorderWidth: width,
             })
+        if self.done.size:
+            self.set_bounds(self.done.size, force=True)
 
     def cmd_toggle_border(self):
         if self.frame:
@@ -626,11 +628,16 @@ class Frame(Window):
         return width, height
 
 
-    def set_bounds(self, rect):
-        if not super().set_bounds(rect):
+    def set_bounds(self, rect, force=False):
+        if not super().set_bounds(rect, force=force):
             return False
         self.configure_content(rect)
         return True
+
+    def show(self):
+        super().show()
+        if self.done.size:
+            self.configure_content(self.done.size)
 
     def add_hint(self):
         res = di(self).inject(HintWindow(self.xcore.create_window(
