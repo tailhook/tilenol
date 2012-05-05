@@ -204,7 +204,8 @@ class LeftBar(object):
         for sec in st.sections:
             for win in sec:
                 if isinstance(win, str):
-                    y = self._draw_section(win, y)
+                    if len(st.sections) > 1:
+                        y = self._draw_section(win, y)
                 else:
                     y = self._draw_win(win, y)
         self._drawn_group = gr
