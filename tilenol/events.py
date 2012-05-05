@@ -9,6 +9,7 @@ from .xcb import Core, Rectangle, XError
 from .groups import GroupManager
 from .commands import CommandDispatcher
 from .classify import Classifier
+from .screen import ScreenManager
 
 
 log = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class EventDispatcher(object):
     mouse = dependency(MouseRegistry, 'mouse-registry')
     xcore = dependency(Core, 'xcore')
     groupman = dependency(GroupManager, 'group-manager')
+    screenman = dependency(ScreenManager, 'screen-manager')
     classifier = dependency(Classifier, 'classifier')
 
     def __init__(self):
@@ -233,4 +235,16 @@ class EventDispatcher(object):
         print("ClientMessage", ev, repr(type), struct.unpack('<5L', ev.data))
         self.all_windows[ev.window].client_message(ev)
 
+    def handle_ScreenChangeNotifyEvent(self, ev):
+        # We only poll for events and use Xinerama for screen querying
+        # because some drivers (nvidia) doesn't provide xrandr data
+        # correctly
+        info = self.xcore.xinerama.QueryScreens()['screen_info']
+        self.screenman.update(list(
+            Rectangle(scr['x_org'], scr['y_org'],
+                scr['width'], scr['height']) for scr in info))
+        self.groupman.check_screens()
+
+    # This notify event is CrtcNotify from xrandr
+    handle_NotifyEvent = handle_ScreenChangeNotifyEvent
 

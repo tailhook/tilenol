@@ -37,6 +37,24 @@ class GroupManager(object):
                 self.commander['screen'] = s
                 self.commander['layout'] = g.current_layout
 
+    def check_screens(self):
+        for s, gr in list(self.current_groups.items()):
+            if s not in self.screenman.screens:
+                gr.hide()
+                gr.screen = None
+                del self.current_groups[s]
+        for i, s in enumerate(self.screenman.screens):
+            if getattr(s, 'group', None):
+                continue
+            for gr in self.groups:
+                if not gr.screen:
+                    break
+            else:
+                return  # no free groups
+            self.current_groups[s] = gr
+            gr.screen = s
+            gr.show()
+
     def add_window(self, win):
         if(isinstance(win.lprops.group, int)
            and win.lprops.group < len(self.groups)):

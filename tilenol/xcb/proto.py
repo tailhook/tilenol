@@ -286,6 +286,7 @@ class Connection(object):
                     assert self.init_data['protocol_major_version'] == 11
                     self._init_values()
                     self._channel = chan
+                    self._eventreg = core.events_by_num.copy()
         return self._channel
 
     def _init_values(self):
@@ -338,11 +339,12 @@ class Connection(object):
     def new_xid(self):
         return next(self.xid_generator)
 
-    def register_event(self, code, value):
-        print("NEW EVENT", code, value)
+    def register_event(self, code, subpro):
+        for ev in subpro.events.values():
+            self._eventreg[code + ev.number] = ev
 
     def event_dispatcher(self, seq, buf):
-        etype = self.proto.subprotos['xproto'].events_by_num[buf[0] & 127]
+        etype = self._eventreg[buf[0] & 127]
         if not etype.no_seq:
             seq = None
             buf = buf[:2] + buf[4:]

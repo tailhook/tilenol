@@ -64,6 +64,7 @@ class Tilenol(object):
         proto.load_xml('xproto')
         proto.load_xml('xinerama')
         proto.load_xml('shm')
+        proto.load_xml('randr')
         self.conn = conn = Connection(proto)
         conn.connection()
         self.root_window = Window(conn.init_data['roots'][0]['root'])
@@ -79,6 +80,14 @@ class Tilenol(object):
         inj['theme'] = inj.inject(cfg.theme())
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
         cmd['env'] = EnvCommands()
+        if hasattr(xcore, 'randr'):
+            NM = xcore.randr.NotifyMask
+            # We only poll for events and use Xinerama for screen querying
+            # because some drivers (nvidia) doesn't provide xrandr data
+            # correctly
+            xcore.randr.SelectInput(window=xcore.root_window,
+                                    enable=NM.ScreenChange | NM.CrtcChange)
+
         if hasattr(xcore, 'xinerama'):
             info = xcore.xinerama.QueryScreens()['screen_info']
             screenman = inj['screen-manager'] = ScreenManager([

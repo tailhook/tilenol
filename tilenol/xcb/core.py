@@ -119,7 +119,10 @@ class Core(object):
             ext = connection.query_extension(k)
             if not ext['present']:
                 continue
-            setattr(self, k, RawWrapper(self._conn, v, ext['major_opcode']))
+            rw = RawWrapper(self._conn, v, ext['major_opcode'])
+            setattr(self, k, rw)
+            for ename, lst in v.enums.items():
+                setattr(rw, ename, EnumWrapper(lst))
         self.root = self._conn.init_data['roots'][0]
         self.root_window = self.root['root']
         pad = self._conn.init_data['bitmap_format_scanline_pad']

@@ -23,6 +23,21 @@ class ScreenManager(object):
             inj.inject(scr)
             self.commander['screen.{}'.format(i)] = scr
 
+    def update(self, screens):
+        # TODO(tailhook) try to guess which one turned off
+        while len(self.screens) > len(screens):
+            scr = self.screens.pop()
+            idx = len(self.screens)
+            del self.commander['screen.{}'.format(idx)]
+        for i, s in enumerate(self.screens):
+            s.set_bounds(screens[i])
+        while len(self.screens) < len(screens):
+            idx = len(self.screens)
+            scr = Screen()
+            scr.set_bounds(screens[idx])
+            self.screens.append(scr)
+            self.commander['screen.{}'.format(idx)] = scr
+
 
 class Screen(object):
 
