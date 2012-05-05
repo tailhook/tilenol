@@ -13,6 +13,19 @@ title: Tilenol
 * Includes asynchronous main loop so no widgets can block entire WM
 * Includes dmenu-like gadget
 
+## Screenshots
+
+Tilenol with nice tabs gadget and `Max` layout:
+
+[ ![Tilenol with tabs](thumb/tilenol-tabs.png) ](images/tilenol-tabs.png)
+
+
+Tilenol with a special layout to test Tilenol itself running inside Xephyr
+with multiple screens:
+
+[ ![Tilenol inside Tilenol](thumb/tilenol-inside.png) ](images/tilenol-inside.png)
+
+
 ## Mailing list
 
 http://groups.google.com/group/tilenol
