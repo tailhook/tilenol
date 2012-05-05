@@ -36,7 +36,7 @@ Dependencies
 * python-greenlet
 * xcb-proto (package containing `/usr/share/xcb/*.xml`)
 * zorro (http://github.com/tailhook/zorro)
-* pycairo (patched to support get_data(), http://github.com/tailhook/pycairo)
+* pycairo from git (git://git.cairographics.org/git/pycairo)
 
 .. note::
 
