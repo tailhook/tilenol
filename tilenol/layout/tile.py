@@ -52,12 +52,17 @@ class BaseStack(object):
 class Stack(BaseStack):
     """Single window visibility stack"""
 
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.pointer = 0
 
     @property
     def visible_windows(self):
-        for i in self.windows:
-            yield i
-            break
+        if not self.windows:
+            return
+        if self.pointer >= len(self.windows):
+            self.pointer = 0
+        yield self.windows[self.pointer]
 
     def add(self, win):
         win.lprops.stack = self.__class__.__name__
@@ -73,11 +78,26 @@ class Stack(BaseStack):
     def layout(self):
         if not self.windows:
             return
-        win = self.windows[0]
+        if self.pointer >= len(self.windows):
+            self.pointer = 0
+        win = self.windows[self.pointer]
         win.set_bounds(self.box)
         win.show()
-        for i in self.windows[1:]:
+        for i in self.windows:
+            if i is win: continue
             i.hide()
+
+    def shift_up(self):
+        self.pointer -= 1
+        if self.pointer < 0:
+            self.pointer = len(self.windows)-1
+        self.parent.dirty()
+
+    def shift_down(self):
+        self.pointer += 1
+        if self.pointer >= len(self.windows):
+            self.pointer = 0
+        self.parent.dirty()
 
 
 class TileStack(BaseStack):
