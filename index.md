@@ -28,6 +28,6 @@ with multiple screens:
 
 ## Mailing list
 
-http://groups.google.com/group/tilenol
+[tilenol@googlegroups.com](http://groups.google.com/group/tilenol)
 
 
