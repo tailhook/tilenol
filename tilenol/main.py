@@ -48,10 +48,6 @@ class Tilenol(object):
         pass
         # extract options needed
 
-    def register_hotkeys(self, keys):
-        for key, cmd in self.config.keys():
-            keys.add_key(key, self.commander.callback(*cmd))
-        keys.register_keys(self.root_window)
 
     def register_gadgets(self):
         inj = di(self)
@@ -120,8 +116,10 @@ class Tilenol(object):
 
         inj.inject(self)
 
-        self.xcore.init_keymap()
-        self.register_hotkeys(keys)
+        # We do not register hotkeys any more as they will be registered
+        # at first mapping notify event
+        #self.register_hotkeys(keys)
+
         mouse.init_buttons()
         mouse.register_buttons(self.root_window)
         self.setup_events()

@@ -10,6 +10,7 @@ from .groups import GroupManager
 from .commands import CommandDispatcher
 from .classify import Classifier
 from .screen import ScreenManager
+from .event import Event
 
 
 log = logging.getLogger(__name__)
@@ -30,13 +31,15 @@ class EventDispatcher(object):
         self.frames = {}
         self.all_windows = {}
         self.active_field = None
+        self.mapping_notify = Event('mapping_notify')
+        self.mapping_notify.listen(self._mapping_notify_delayed)
 
     def dispatch(self, ev):
         meth = getattr(self, 'handle_'+ev.__class__.__name__, None)
         if meth:
             meth(ev)
         else:
-            print("EVENT", ev)
+            log.warning("Unknown event ``%r''", ev)
 
     def register_window(self, win):
         self.all_windows[win.wid] = win
@@ -247,4 +250,10 @@ class EventDispatcher(object):
 
     # This notify event is CrtcNotify from xrandr
     handle_NotifyEvent = handle_ScreenChangeNotifyEvent
+
+    def handle_MappingNotifyEvent(self, ev):
+        self.mapping_notify.emit()
+
+    def _mapping_notify_delayed(self):
+        self.keys.reconfigure_keys()
 
