@@ -251,7 +251,7 @@ class Subprotocol(object):
             self.major_version = root.attrib['major-version']
             self.minor_version = root.attrib['minor-version']
         self.simple_types()
-        for el in xml.iterfind('*'):
+        for el in xml.findall('*'):
             getattr(self, '_parse_' + el.tag)(el)
 
     def add_type(self, typ):
@@ -283,7 +283,7 @@ class Subprotocol(object):
 
     def _parse_items(self, el):
         items = OrderedDict()
-        for field in el.iterfind('*'):
+        for field in el.findall('*'):
             if field.tag == 'field':
                 items[field.attrib['name']] = self.get_type(
                     field.attrib['type'])
@@ -368,7 +368,7 @@ class Subprotocol(object):
             assert op in '+-*/'
             if op == '/':
                 op = '//'
-            return '('+ op.join(map(self._parse_expr, xml.iterfind('*'))) +')'
+            return '('+ op.join(map(self._parse_expr, xml.findall('*'))) +')'
         elif xml.tag == 'value':
             return str(int(xml.text))
         else:
@@ -390,7 +390,7 @@ class Subprotocol(object):
     def _parse_enum(self, el):
         items = OrderedDict()
         maxv = 0
-        for choice in el.iterfind('*'):
+        for choice in el.findall('*'):
             assert choice.tag == 'item'
             val = choice.find('value')
             if val is None:
