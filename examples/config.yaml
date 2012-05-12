@@ -4,14 +4,14 @@
 # override some configuration given in another file
 
 groups:
-  1: Tile
-  2: Max
-  3: Tile
-  4: Tile
-  5: Tile
-  gimp: Gimp
-  im: IM_Twitter
-  max: Max
+  - 1: Tile
+  - 2: Max
+  - 3: Tile
+  - 4: Tile
+  - 5: Tile
+  - gimp: Gimp
+  - im: IM_Twitter
+  - max: Max
 
 # Extra layouts to be turned on on demand
 #

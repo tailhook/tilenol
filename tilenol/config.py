@@ -126,12 +126,26 @@ class Config(object):
         theme.update_from(self.data.get('theme-customize', {}))
         return theme
 
+    @staticmethod
+    def _pairs(yaml):
+        """Returns pairs either in order listed in yaml
+        if it was defined like ordered mapping, or just in arbitrary
+        order of dict iteration
+        """
+        if isinstance(yaml, (list, tuple)):
+            for item in yaml:
+                for k, v in item.items():
+                    yield k, v
+        else:
+            for k, v in yaml.items():
+                yield k, v
+
     def groups(self):
         from tilenol.groups import Group
         groups = []
         if 'groups' in self.data:
             from tilenol.layout import examples, Layout
-            for name, lname in self.data['groups'].items():
+            for name, lname in self._pairs(self.data['groups']):
                 lay = self.get_extension_class(lname,
                     module_name='layouts',
                     default_module=examples,
