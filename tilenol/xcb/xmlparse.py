@@ -210,11 +210,20 @@ class Params(object):
 
 
 class Proto(object):
-    path = '/usr/share/xcb'
 
-    def __init__(self, path=path):
+    def __init__(self, path=None):
+        if path is None:
+            path = self.resolve_path()
         self.path = path
         self.subprotos = {}
+
+    def resolve_path(self):
+        try:
+            import sysconfig
+        except ImportError:  # python3.1 has no sysconfig
+            from distutils import sysconfig
+        path = sysconfig.get_config_var('datarootdir')
+        return os.path.join(path, 'xcb')
 
     def load_xml(self, name):
         with open(os.path.join(self.path, name + '.xml'), 'rb') as f:
