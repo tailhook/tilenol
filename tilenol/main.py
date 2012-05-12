@@ -11,7 +11,7 @@ from .xcb import Connection, Proto, Core, Keysyms, Rectangle
 from .keyregistry import KeyRegistry
 from .mouseregistry import MouseRegistry
 from .ewmh import Ewmh
-from .window import Window
+from .window import Root, Window
 from .events import EventDispatcher
 from .commands import CommandDispatcher, EnvCommands
 from .config import Config
@@ -63,7 +63,7 @@ class Tilenol(object):
         proto.load_xml('randr')
         self.conn = conn = Connection(proto)
         conn.connection()
-        self.root_window = Window(conn.init_data['roots'][0]['root'])
+        self.root_window = Root(conn.init_data['roots'][0]['root'])
 
         inj = DependencyInjector()
         inj['xcore'] = xcore = Core(conn)
@@ -110,7 +110,9 @@ class Tilenol(object):
         for cls, cond, act in cfg.rules():
             rules.add_rule(cond, act, klass=cls)
 
-        inj['event-dispatcher'] = inj.inject(EventDispatcher())
+        eman = inj.inject(EventDispatcher())
+        eman.all_windows[self.root_window.wid] = self.root_window
+        inj['event-dispatcher'] = eman
         inj['ewmh'] = Ewmh()
         inj.inject(inj['ewmh'])
 

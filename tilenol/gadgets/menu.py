@@ -196,7 +196,6 @@ class SelectLayout(Select):
     config = dependency(Config, 'config')
 
     def items(self):
-        print(self.config.all_layouts().items())
         return sorted(self.config.all_layouts().items(), key=itemgetter(0))
 
     def submit(self, input, matched, value):

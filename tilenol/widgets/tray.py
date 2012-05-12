@@ -46,9 +46,6 @@ class Systray(Widget):
             selection=self.xcore.atom._NET_SYSTEM_TRAY_S0,
             time=0,
             )
-        print("OWNER", self.xcore.raw.GetSelectionOwner(
-            selection=self.xcore.atom._NET_SYSTEM_TRAY_S0,
-            ))
         self.xcore.send_event('ClientMessage',
             self.xcore.EventMask.StructureNotify,
             self.xcore.root_window,

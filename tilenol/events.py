@@ -133,19 +133,19 @@ class EventDispatcher(object):
                 win.group.remove_window(win)
 
     def handle_FocusInEvent(self, ev):
+        if(ev.event == self.xcore.root_window
+                and ev.mode not in (self.xcore.NotifyMode.Grab,
+                                    self.xcore.NotifyMode.Ungrab)
+                and ev.detail == getattr(self.xcore.NotifyDetail, 'None')):
+            self.xcore.raw.SetInputFocus(
+                focus=self.xcore.root_window,
+                revert_to=self.xcore.InputFocus.PointerRoot,
+                time=self.xcore.last_time,
+                )
+            return
         try:
             win = self.all_windows[ev.event]
         except KeyError:
-            if(ev.event == self.xcore.root_window
-                    and ev.mode not in (self.xcore.NotifyMode.Grab,
-                                        self.xcore.NotifyMode.Ungrab)
-                    and ev.detail == getattr(self.xcore.NotifyDetail, 'None')):
-                self.xcore.raw.SetInputFocus(
-                    focus=self.xcore.root_window,
-                    revert_to=self.xcore.InputFocus.PointerRoot,
-                    time=self.xcore.last_time,
-                    )
-                return
             log.warning("Focus request for non-existent window %r",
                 ev.event)
         else:
@@ -234,8 +234,8 @@ class EventDispatcher(object):
 
     def handle_ClientMessageEvent(self, ev):
         type = self.xcore.atom[ev.type]
-        import struct
-        print("ClientMessage", ev, repr(type), struct.unpack('<5L', ev.data))
+        # import struct
+        # print("ClientMessage", ev, repr(type), struct.unpack('<5L', ev.data))
         self.all_windows[ev.window].client_message(ev)
 
     def handle_ScreenChangeNotifyEvent(self, ev):

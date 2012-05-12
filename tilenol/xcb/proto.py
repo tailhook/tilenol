@@ -84,10 +84,14 @@ class Channel(channel.PipelinedReqChannel):
         self._cond.notify()
         return val
 
-    def push(self, input):
+    def push(self, input, ignore_error=False):
         """For requests which do not need an answer"""
-        self._pending.append((input, None,
-                              traceback.extract_stack(limit=7)[:-2]))
+        if ignore_error:
+            tb = None
+        else:
+            tb = traceback.extract_stack(limit=7)[:-2]
+        self._pending.append((input, None, tb))
+
         self._cond.notify()
 
     def sender(self):
@@ -139,7 +143,7 @@ class Channel(channel.PipelinedReqChannel):
                 if reply is not None:
                     value = self.parse_reply(reply, value)
             fut.set(value)
-        else:
+        elif reply:  # traceback here, if reply is None error should be ignored
             assert value[0] == 0
             err = self.parse_error(value)
             lst = traceback.format_list(reply)
@@ -309,7 +313,7 @@ class Connection(object):
                 conn.register_error(res['first_error'], sub)
         return res
 
-    def do_request(self, rtype, *, _opcode=None, **kw):
+    def do_request(self, rtype, *, _opcode=None, _ignore_error=False, **kw):
         conn = self.connection()
         for i in list(kw):
             n = i + '_len'
@@ -334,7 +338,7 @@ class Connection(object):
             else:
                 return res
         else:
-            conn.push(buf)
+            conn.push(buf, ignore_error=_ignore_error)
 
     def new_xid(self):
         return next(self.xid_generator)

@@ -180,7 +180,8 @@ class LeftBar(object):
         return y
 
     def _paint(self):
-        self._img.draw(self.window)
+        if self._img:
+            self._img.draw(self.window)
 
     def _redraw(self):
         if not self.visible:

@@ -45,7 +45,8 @@ class Ewmh(object):
             type=self.xcore.atom.CARD32,
             format=32,
             data_len=2,
-            data=struct.pack('<LL', 0, 0))
+            data=struct.pack('<LL', 0, 0),
+            _ignore_error=True)  # window already destroyed
 
 
 def match_type(*types):

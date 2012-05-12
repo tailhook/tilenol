@@ -64,8 +64,33 @@ class LayoutProperties(object):
                 self.window.set_property('_TN_LP_' + name.upper(), value)
 
 
+class BaseWindow(object):
+
+    def __init__(self, wid):
+        self.wid = wid
+
+    def __index__(self):
+        return self.wid
+
+
+class Root(BaseWindow):
+    """Root window
+
+    Mostly used to ignore various root window events
+    """
+
+    def client_message(self, ev):
+        pass
+
+    def focus_in(self):
+        pass
+
+    def focus_out(self):
+        pass
+
+
 @has_dependencies
-class Window(object):
+class Window(BaseWindow):
 
     xcore = dependency(Core, 'xcore')
     ewmh = dependency(Ewmh, 'ewmh')
@@ -76,7 +101,7 @@ class Window(object):
     any_window_changed = Event('Window.any_window_changed')
 
     def __init__(self, wid):
-        self.wid = wid
+        super().__init__(wid)
         self.frame = None
         self.want = State()
         self.done = State()
@@ -188,9 +213,11 @@ class Window(object):
         self.xcore.raw.ReparentWindow(
             window=self,
             parent=self.xcore.root_window,
-            x=0, y=0)
+            x=0, y=0,
+            _ignore_error=True)  # already destroyed
         self.xcore.raw.ChangeSaveSet(window=self,
-                                     mode=self.xcore.SetMode.Delete)
+                                     mode=self.xcore.SetMode.Delete,
+                                     _ignore_error=True)  # already destroyed
 
 
     def create_frame(self):
@@ -550,7 +577,7 @@ class Frame(Window):
         assert win in (self.content, None)
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
             self.xcore.CW.BorderPixel: self.theme.window.inactive_border,
-        })
+        }, _ignore_error=True)
 
     def focus_in(self):
         self.real.focus = True
@@ -564,7 +591,7 @@ class Frame(Window):
         self.commander['screen'] = self.content.group.screen
         self.xcore.raw.ChangeWindowAttributes(window=self, params={
             self.xcore.CW.BorderPixel: self.theme.window.active_border,
-        })
+        }, _ignore_error=True)
 
     def pointer_enter(self):
         self.commander['pointer_window'] = self.content

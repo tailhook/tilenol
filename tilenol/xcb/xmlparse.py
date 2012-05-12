@@ -301,8 +301,7 @@ class Subprotocol(object):
                         field.attrib['value-mask-type'])
                 items['params'] = Params(field.attrib['value-list-name'], name)
             elif field.tag == 'exprfield':
-                print(field.tag)
-                # TODO(tailhook) implement exprfield
+                pass  # TODO(tailhook) implement exprfield
             elif field.tag == 'reply':
                 pass  # just skip it
             else:
