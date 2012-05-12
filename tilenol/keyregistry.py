@@ -85,21 +85,21 @@ class KeyRegistry(object):
     def register_keys(self, win):
         self.init_modifiers()
         for mod, key in self.keys:
-            try:
-                kcode = self.xcore.keysym_to_keycode[key]
-            except KeyError:
+            kcodes = self.xcore.keysym_to_keycode[key]
+            if not kcodes:
                 log.error("No mapping for key %r",
                     self.keysyms.code_to_name[key])
                 continue
-            for extra in self.extra_modifiers:
-                self.xcore.raw.GrabKey(
-                    owner_events=False,
-                    grab_window=win,
-                    modifiers=mod|extra,
-                    key=kcode,
-                    keyboard_mode=self.xcore.GrabMode.Async,
-                    pointer_mode=self.xcore.GrabMode.Async,
-                    )
+            for kcode in kcodes:
+                for extra in self.extra_modifiers:
+                    self.xcore.raw.GrabKey(
+                        owner_events=False,
+                        grab_window=win,
+                        modifiers=mod|extra,
+                        key=kcode,
+                        keyboard_mode=self.xcore.GrabMode.Async,
+                        pointer_mode=self.xcore.GrabMode.Async,
+                        )
 
     def unregister_keys(self, win):
         self.xcore.raw.UngrabKey(

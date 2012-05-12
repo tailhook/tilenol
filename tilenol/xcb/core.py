@@ -1,5 +1,5 @@
 from functools import partial
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import struct
 
 from zorro.util import cached_property
@@ -136,7 +136,7 @@ class Core(object):
     def init_keymap(self):
         self.keycode_to_keysym = {}
         self.shift_keycode_to_keysym = {}
-        self.keysym_to_keycode = {}
+        self.keysym_to_keycode = defaultdict(list)
         idata = self._conn.init_data
         mapping = self.raw.GetKeyboardMapping(
             first_keycode=idata['min_keycode'],
@@ -147,7 +147,7 @@ class Core(object):
                 *(mapiter for i in range(mapping['keysyms_per_keycode']))):
             self.keycode_to_keysym[row[0]] = row[1]
             self.shift_keycode_to_keysym[row[0]] = row[2]
-            self.keysym_to_keycode[row[1]] = row[0]
+            self.keysym_to_keycode[row[1]].append(row[0])
 
         caps = self.ModMask.Lock  # caps lock
         num = getattr(self.ModMask, '2')  # mod2 is usually numlock
