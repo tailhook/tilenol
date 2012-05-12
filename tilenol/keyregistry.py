@@ -60,8 +60,12 @@ class KeyRegistry(object):
         m = hotkey_re.match(keystr)
         if not m:
             raise ValueError(keystr)
-        modmask, keysym = self.parse_key(m.group(0))
-        self.keys[modmask, keysym] = handler
+        try:
+            modmask, keysym = self.parse_key(m.group(0))
+        except (KeyError, ValueError):
+            log.error("Can't parse key %r", m.group(0))
+        else:
+            self.keys[modmask, keysym] = handler
 
     def init_modifiers(self):
         # TODO(tailhook) probably calculate them instead of hardcoding
@@ -84,7 +88,7 @@ class KeyRegistry(object):
             try:
                 kcode = self.xcore.keysym_to_keycode[key]
             except KeyError:
-                log.warning("No mapping for key ``%s''",
+                log.error("No mapping for key %r",
                     self.keysyms.code_to_name[key])
                 continue
             for extra in self.extra_modifiers:
