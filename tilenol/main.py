@@ -118,9 +118,8 @@ class Tilenol(object):
 
         inj.inject(self)
 
-        # We do not register hotkeys any more as they will be registered
-        # at first mapping notify event
-        #self.register_hotkeys(keys)
+        # Register hotkeys as mapping notify can be skipped on inplace restart
+        keys.configure_hotkeys()
 
         mouse.init_buttons()
         mouse.register_buttons(self.root_window)
