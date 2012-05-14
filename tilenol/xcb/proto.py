@@ -33,7 +33,8 @@ class Channel(channel.PipelinedReqChannel):
     MINOR_VERSION = 0
     BUFSIZE = 4096
 
-    def __init__(self, *, unixsock, event_dispatcher, proto):
+    def __init__(self, *, host=None, port=None,
+                 unixsock, event_dispatcher, proto):
         super().__init__()
         self.unixsock = unixsock
         self.request_id = 0
@@ -256,14 +257,21 @@ class Connection(object):
         else:
             maj = int(port)
             min = 0
-        assert host == "", "Only localhost supported so far"
         assert min == 0, 'Subdisplays are not not supported so far'
         if auth_type is None:
+            if host != "":
+                haddr = socket.inet_aton(socket.gethostbyname(host))
             for auth in read_auth():
-                if auth.family == socket.AF_UNIX and maj == auth.number:
-                    auth_type = auth.name
-                    auth_key = auth.data
-                    break
+                if host == "":
+                    if auth.family == 1 and maj == auth.number:
+                        auth_type = auth.name
+                        auth_key = auth.data
+                        break
+                else:
+                    if auth.family == 0 and auth.address == haddr:
+                        auth_type = auth.name
+                        auth_key = auth.data
+                        break
             else:
                 raise RuntimeError("Can't find X auth type")
         self.unixsock = '/tmp/.X11-unix/X{:d}'.format(maj)
