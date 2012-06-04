@@ -164,7 +164,7 @@ class Config(object):
         self._all_layouts = layouts = {}
         from tilenol.layout import examples, Layout
         if 'groups' in self.data:
-            for name, lname in self.data['groups'].items():
+            for name, lname in self._pairs(self.data['groups']):
                 lay = self.get_extension_class(lname,
                     module_name='layouts',
                     default_module=examples,

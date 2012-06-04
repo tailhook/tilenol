@@ -71,6 +71,7 @@ class Select(GadgetBase):
             'close': self.close,
             }))
         self.dispatcher.active_field = self.text_field
+        self._redraw()
 
     def cmd_hide(self):
         self._close()
