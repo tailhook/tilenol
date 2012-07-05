@@ -201,7 +201,7 @@ class Channel(channel.PipelinedReqChannel):
                 res, maj, min, ln = struct.unpack_from('<BxHHH', buf, pos)
                 ln = ln*4+8
                 if len(buf)-pos < ln:
-                    break
+                    continue
                 self._producing.popleft()[1].set(buf[pos:pos+ln])
                 pos += ln
                 break
