@@ -56,6 +56,9 @@ class Tilenol(object):
             self.commander[name] = inst
 
     def run(self):
+        signal.signal(signal.SIGCHLD, child_handler)
+        signal.signal(signal.SIGQUIT, quit_handler)
+
         proto = Proto()
         proto.load_xml('xproto')
         proto.load_xml('xinerama')
@@ -139,8 +142,6 @@ class Tilenol(object):
         self.register_gadgets()
 
         self.catch_windows()
-        signal.signal(signal.SIGCHLD, child_handler)
-        signal.signal(signal.SIGQUIT, quit_handler)
         self.loop()
 
     def catch_windows(self):
