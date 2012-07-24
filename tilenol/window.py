@@ -7,7 +7,7 @@ import cairo
 from zorro.di import di, has_dependencies, dependency
 
 from .xcb import Core, Rectangle, XError
-from .icccm import SizeHints
+from .icccm import SizeHints, is_window_needs_input
 from .commands import CommandDispatcher
 from .ewmh import Ewmh
 from .event import Event
@@ -253,6 +253,7 @@ class Window(BaseWindow):
 
     def focus(self):
         self.done.focus = True
+        want_input = True
         if "WM_TAKE_FOCUS" in self.protocols:
             self.send_event('ClientMessage',
                 window=self,
@@ -262,7 +263,8 @@ class Window(BaseWindow):
                     self.xcore.atom.WM_TAKE_FOCUS,
                     self.xcore.last_time),
                 )
-        else:
+            want_input = is_window_needs_input(self)
+        if want_input:
             self.xcore.raw.SetInputFocus(
                 focus=self,
                 revert_to=self.xcore.InputFocus.PointerRoot,

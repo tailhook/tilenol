@@ -65,3 +65,10 @@ def is_window_urgent(win):
         return False
     return bool(hints[0] & UrgencyHint)
 
+
+def is_window_needs_input(win):
+    hints = win.props.get('WM_HINTS')
+    if hints is None:
+        return False
+    return bool(hints[0] & InputHint)
+
