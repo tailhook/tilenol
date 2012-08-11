@@ -20,7 +20,8 @@ class SubTheme(object):
             ))
 
     def update_from(self, dic):
-        for k, v in dic:
+        for k, v in dic.items():
+            k = k.replace('-', '_')
             old = getattr(self, k, None)
             if old is None:
                 return
@@ -29,6 +30,8 @@ class SubTheme(object):
                     self.set_color(k, int(v))
                 else:
                     setattr(self, k, int(v))
+            elif isinstance(old, Padding):
+                setattr(self, k, Padding(*v))
             elif isinstance(old, Font):
                 if isinstance(v, (list, tuple)):
                     f = Font(*v)
@@ -133,10 +136,7 @@ class Theme(SubTheme):
         self.tabs.section_padding = Padding(6, 2, 2, 2)
 
     def update_from(self, dic):
-        if 'window' in dic:
-            self.window.update_from(dic['window'])
-        if 'hint' in dic:
-            self.hint.update_from(dic['hint'])
-        if 'bar' in dic:
-            self.bar.update_from(dic['bar'])
+        for key, sub in self.__dict__.items():
+            if isinstance(sub, SubTheme) and key in dic:
+                sub.update_from(dic[key])
 
