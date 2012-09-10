@@ -84,8 +84,9 @@ class Tilenol(object):
             # We only poll for events and use Xinerama for screen querying
             # because some drivers (nvidia) doesn't provide xrandr data
             # correctly
-            xcore.randr.SelectInput(window=xcore.root_window,
-                                    enable=NM.ScreenChange | NM.CrtcChange)
+            xcore.randr.SelectInput(
+                window=xcore.root_window,
+                enable=NM.ScreenChange | NM.CrtcChange | NM.OutputChange | NM.OutputProperty)
 
         if hasattr(xcore, 'xinerama'):
             info = xcore.xinerama.QueryScreens()['screen_info']

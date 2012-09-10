@@ -1,3 +1,4 @@
+import struct
 import logging
 
 from zorro.di import di, has_dependencies, dependency
@@ -244,19 +245,23 @@ class EventDispatcher(object):
         win = self.all_windows[ev.window]
         if hasattr(win, 'client_message'):
             win.client_message(ev)
+        else:
+            log.warning("Unhandled client message %r %r %r",
+                ev, type, struct.unpack('<5L', ev.data))
 
     def handle_ScreenChangeNotifyEvent(self, ev):
         # We only poll for events and use Xinerama for screen querying
         # because some drivers (nvidia) doesn't provide xrandr data
         # correctly
+        log.warning("Screen change %r", ev)
         info = self.xcore.xinerama.QueryScreens()['screen_info']
         self.screenman.update(list(
             Rectangle(scr['x_org'], scr['y_org'],
                 scr['width'], scr['height']) for scr in info))
         self.groupman.check_screens()
 
-    # This notify event is CrtcNotify from xrandr
-    handle_NotifyEvent = handle_ScreenChangeNotifyEvent
+    def handle_NotifyEvent(self, ev):  # Xrandr events are reported here
+        log.warning("Notify event %r", ev)
 
     def handle_MappingNotifyEvent(self, ev):
         self.mapping_notify.emit()
