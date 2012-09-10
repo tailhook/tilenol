@@ -231,7 +231,6 @@ class Window(BaseWindow):
             params={
                 self.xcore.CW.BackPixel: self.theme.window.background,
                 self.xcore.CW.BorderPixel: self.theme.window.inactive_border,
-                self.xcore.CW.OverrideRedirect: True,
                 self.xcore.CW.EventMask:
                     self.xcore.EventMask.SubstructureRedirect
                     | self.xcore.EventMask.SubstructureNotify

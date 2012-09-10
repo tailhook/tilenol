@@ -87,7 +87,8 @@ class EventDispatcher(object):
             log.warning("Enter notify for non-existent window %r", ev.event)
         else:
             if ev.mode != self.xcore.NotifyMode.Grab:
-                win.pointer_enter()
+                if hasattr(win, 'pointer_enter'):
+                    win.pointer_enter()
             if self.active_field:
                 return
             if(win.props.get("WM_HINTS") is None
@@ -103,7 +104,8 @@ class EventDispatcher(object):
             log.warning("Leave notify for non-existent window %r", ev.event)
         else:
             if ev.mode != self.xcore.NotifyMode.Grab:
-                win.pointer_leave()
+                if hasattr(win, 'pointer_leave'):
+                    win.pointer_leave()
 
     def handle_MapNotifyEvent(self, ev):
         try:
@@ -113,6 +115,8 @@ class EventDispatcher(object):
                 ev.window)
         else:
             win.real.visible = True
+            if win.frame:
+                win.frame.show()
 
     def handle_UnmapNotifyEvent(self, ev):
         if ev.event not in self.frames:
@@ -128,7 +132,8 @@ class EventDispatcher(object):
             if win.frame:
                 win.ewmh.hiding_window(win)
                 win.frame.hide()
-                win.reparent_root()
+                # According to the docs here should be reparenting of windows
+                # to the root window, but that doesn't work well
             if hasattr(win, 'group'):
                 win.group.remove_window(win)
 
@@ -236,7 +241,9 @@ class EventDispatcher(object):
         type = self.xcore.atom[ev.type]
         # import struct
         # print("ClientMessage", ev, repr(type), struct.unpack('<5L', ev.data))
-        self.all_windows[ev.window].client_message(ev)
+        win = self.all_windows[ev.window]
+        if hasattr(win, 'client_message'):
+            win.client_message(ev)
 
     def handle_ScreenChangeNotifyEvent(self, ev):
         # We only poll for events and use Xinerama for screen querying
