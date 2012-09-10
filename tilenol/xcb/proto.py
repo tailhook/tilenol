@@ -330,14 +330,17 @@ class Connection(object):
 
         buf = bytearray()
         rtype.write_to(buf, kw)
-        ln = int(ceil((len(buf)+3)/4))
         if _opcode is None:
             buf.insert(0, rtype.opcode)
+            if len(buf) < 2:
+                buf.append(0)
         else:
             buf.insert(0, _opcode)
             buf.insert(1, rtype.opcode)
+        ln = int(ceil((len(buf)+2)/4))
         buf[2:2] = struct.pack('<H', ln)
         buf += b'\x00'*(ln*4 - len(buf))
+        print("REQ", rtype.name, kw, ln, len(buf), buf)
 
         if rtype.reply:
             res = conn.request(buf, rtype.reply).get()
@@ -357,8 +360,9 @@ class Connection(object):
 
     def event_dispatcher(self, seq, buf):
         etype = self._eventreg[buf[0] & 127]
-        if not etype.no_seq:
+        if etype.no_seq:
             seq = None
+        else:
             buf = buf[:2] + buf[4:]
         ev, pos = etype.read_from(buf, 1)
         assert pos <= 32
