@@ -130,53 +130,91 @@ def print_output_properties(core):
         allinfo[output] = props
     pprint.pprint(allinfo)
 
-def configure_outputs(core):
-    core.raw.GrabServer()
-    sinfo = core.randr.GetScreenInfo(window=core.root_window)
+def check_screens(core):
     scr = core.randr.GetScreenResources(window=core.root_window)
-    modes = {m['id']:m for m in scr['modes']}
-    updates = []
-    width = 0
-    height = 0
-    mm_width = 0
-    mm_height = 0
-    for idx, oid in enumerate(scr['outputs']):
+    allmapped = set()
+    for crtc in scr['crtcs']:
+        cinfo = core.randr.GetCrtcInfo(
+            crtc=crtc,
+            config_timestamp=scr['config_timestamp'],
+            )
+        allmapped.update(cinfo['outputs'])
+    for oid in scr['outputs']:
         oinfo = core.randr.GetOutputInfo(
             output=oid,
             config_timestamp=scr['config_timestamp'],
             )
         oname = bytes(oinfo['name']).decode('utf-8')
-        if oinfo['connection'] == 0:
-            crtc = scr['crtcs'][idx]
-            cinfo = core.randr.GetCrtcInfo(
-                crtc=crtc,
+        if oinfo['connection'] == 0 and oid not in allmapped:
+            print("CONNECTED", oname)
+            return True  # connected screen
+        if oinfo['connection'] != 0 and oid in allmapped:
+            print("DISCON", oname)
+            return True  # disconnected screen
+    return False
+
+def configure_outputs(core):
+    core.raw.GrabServer()
+    try:
+        sinfo = core.randr.GetScreenInfo(window=core.root_window)
+        scr = core.randr.GetScreenResources(window=core.root_window)
+        modes = {m['id']:m for m in scr['modes']}
+        updates = []
+        width = 0
+        height = 0
+        mm_width = 0
+        mm_height = 0
+        crtc_index = 0
+        for idx, oid in enumerate(scr['outputs']):
+            oinfo = core.randr.GetOutputInfo(
+                output=oid,
                 config_timestamp=scr['config_timestamp'],
                 )
-            mid = oinfo['modes'][0]
+            oname = bytes(oinfo['name']).decode('utf-8')
+            if oinfo['connection'] == 0:
+                crtc = scr['crtcs'][crtc_index]
+                crtc_index += 1
+                cinfo = core.randr.GetCrtcInfo(
+                    crtc=crtc,
+                    config_timestamp=scr['config_timestamp'],
+                    )
+                mid = oinfo['modes'][0]
+                updates.append(dict(
+                    crtc=crtc,
+                    timestamp=0,
+                    config_timestamp=scr['config_timestamp'],
+                    x=width,
+                    y=0,
+                    mode=oinfo['modes'][0],
+                    rotation=cinfo['rotation'],
+                    outputs=struct.pack('<L', oid),
+                    ))
+                width += modes[mid]['width']
+                height = max(height, modes[mid]['height'])
+                mm_width = oinfo['mm_width']
+                mm_height = max(oinfo['mm_height'], mm_height)
+        for crtc in scr['crtcs'][crtc_index:]:
             updates.append(dict(
                 crtc=crtc,
                 timestamp=0,
                 config_timestamp=scr['config_timestamp'],
-                x=width,
+                x=0,
                 y=0,
-                mode=oinfo['modes'][0],
-                rotation=cinfo['rotation'],
-                outputs=struct.pack('<L', oid),
+                mode=0,
+                rotation=1,
+                outputs=b'',
                 ))
-            width += modes[mid]['width']
-            height = max(height, modes[mid]['height'])
-            mm_width = oinfo['mm_width']
-            mm_height = max(oinfo['mm_height'], mm_height)
-    core.randr.SetScreenSize(
-        window=core.root_window,
-        width=width,
-        height=height,
-        mm_width=mm_width,
-        mm_height=mm_height,
-        )
-    for up in updates:
-        core.randr.SetCrtcConfig(**up)
-    core.raw.UngrabServer()
+        core.randr.SetScreenSize(
+            window=core.root_window,
+            width=width,
+            height=height,
+            mm_width=mm_width,
+            mm_height=mm_height,
+            )
+        for up in updates:
+            core.randr.SetCrtcConfig(**up)
+    finally:
+        core.raw.UngrabServer()
 
 
 def get_options():
@@ -185,6 +223,10 @@ def get_options():
     ap.add_argument('--screen', dest='action',
         help="Show screen properties",
         action='store_const', const='screen', default='help')
+    ap.add_argument('--check', dest='action',
+        help="Returns non-zero exit status if either some mapped screens"
+             " disconnected, or some unmapped screens connected",
+        action='store_const', const='check', default='help')
     ap.add_argument('--crtcs', dest='action',
         help="Show CRTCs",
         action='store_const', const='crtc')
@@ -225,10 +267,12 @@ def print_help(ap):
 def main():
     ap = get_options()
     options = ap.parse_args()
+    retcode = 0
 
     hub = Hub()
     @hub.run
     def main():
+        nonlocal retcode
         proto = Proto()
         proto.load_xml('xproto')
         proto.load_xml('randr')
@@ -277,6 +321,9 @@ def main():
             print_providers(core)
         elif options.action == 'autoconfig':
             configure_outputs(core)
+        elif options.action == 'check':
+            retcode = check_screens(core)
+    sys.exit(retcode)
 
 
 if __name__ == '__main__':
