@@ -70,7 +70,15 @@ class Config(object):
         self.cache = PathGen("XDG_CACHE_HOME", "~/.cache")
         self.runtime = PathGen("XDG_RUNTIME_DIR", "~/.cache/tilenol")
         config = self.config.get_config('config', {})
+
+        config.setdefault('auto-screen-configuration', True)
+        config.setdefault('screen-dpi', 96)
+
         self.data = config
+
+    def __getitem__(self, name):
+        return self.data[name]
+
 
     def init_extensions(self):
         from tilenol import ext

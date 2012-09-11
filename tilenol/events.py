@@ -12,6 +12,8 @@ from .commands import CommandDispatcher
 from .classify import Classifier
 from .screen import ScreenManager
 from .event import Event
+from .config import Config
+from . import randr
 
 
 log = logging.getLogger(__name__)
@@ -26,6 +28,7 @@ class EventDispatcher(object):
     groupman = dependency(GroupManager, 'group-manager')
     screenman = dependency(ScreenManager, 'screen-manager')
     classifier = dependency(Classifier, 'classifier')
+    config = dependency(Config, 'config')
 
     def __init__(self):
         self.windows = {}
@@ -253,7 +256,10 @@ class EventDispatcher(object):
         # We only poll for events and use Xinerama for screen querying
         # because some drivers (nvidia) doesn't provide xrandr data
         # correctly
-        log.warning("Screen change %r", ev)
+        if self.config['auto-screen-configuration']:
+            if randr.check_screens(self.xcore):
+                randr.configure_outputs(self.xcore,
+                                        self.config['screen-dpi']/25.4)
         info = self.xcore.xinerama.QueryScreens()['screen_info']
         self.screenman.update(list(
             Rectangle(scr['x_org'], scr['y_org'],

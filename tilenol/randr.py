@@ -153,7 +153,7 @@ def check_screens(core):
             return True  # disconnected screen
     return False
 
-def configure_outputs(core):
+def configure_outputs(core, ppm=3.78):
     core.raw.GrabServer()
     try:
         sinfo = core.randr.GetScreenInfo(window=core.root_window)
@@ -208,11 +208,18 @@ def configure_outputs(core):
             window=core.root_window,
             width=width,
             height=height,
-            mm_width=mm_width,
-            mm_height=mm_height,
+            mm_width=int(width/ppm),
+            mm_height=int(height/ppm),
             )
         for up in updates:
             core.randr.SetCrtcConfig(**up)
+        core.randr.SetScreenSize(
+            window=core.root_window,
+            width=width,
+            height=height,
+            mm_width=int(width/ppm),
+            mm_height=int(height/ppm),
+            )
     finally:
         core.raw.UngrabServer()
 
@@ -254,6 +261,9 @@ def get_options():
     ap.add_argument('--auto-config', dest='action',
         help="Disable screen by name (like xrandr --output X --off)",
         action='store_const', const='autoconfig')
+    ap.add_argument('--ppm', dest='ppm',
+        help="Pixels per millimeter for auto-configuration",
+        type=float, default=3.78)
     ap.add_argument('--all', dest='action',
         help="Show all available data (except output properties)",
         action='store_const', const='all')
@@ -320,7 +330,7 @@ def main():
         elif options.action == 'providers':
             print_providers(core)
         elif options.action == 'autoconfig':
-            configure_outputs(core)
+            configure_outputs(core, options.ppm)
         elif options.action == 'check':
             retcode = check_screens(core)
     sys.exit(retcode)

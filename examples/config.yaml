@@ -3,6 +3,9 @@
 # it's used to configure groups, although can be used to extend or
 # override some configuration given in another file
 
+auto-screen-configuration: yes
+screen-dpi: 96
+
 groups:
   - 1: Tile
   - 2: Max

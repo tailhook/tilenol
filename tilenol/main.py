@@ -19,6 +19,7 @@ from .groups import Group, GroupManager
 from .screen import ScreenManager
 from .classify import Classifier
 from .theme import Theme
+from . import randr
 
 
 log = logging.getLogger(__name__)
@@ -73,8 +74,16 @@ class Tilenol(object):
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
 
+
         cfg = inj['config'] = inj.inject(Config())
         cfg.init_extensions()
+
+        # Hack, but this only makes GetScreenInfo work
+        xcore.randr._proto.requests['GetScreenInfo'].reply.items['rates'].code\
+            = compile('0', 'XPROTO', 'eval')
+        if cfg['auto-screen-configuration']:
+            if randr.check_screens(xcore):
+                randr.configure_outputs(xcore, cfg['screen-dpi']/25.4)
 
         inj['theme'] = inj.inject(cfg.theme())
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
