@@ -340,7 +340,6 @@ class Connection(object):
         ln = int(ceil((len(buf)+2)/4))
         buf[2:2] = struct.pack('<H', ln)
         buf += b'\x00'*(ln*4 - len(buf))
-        print("REQ", rtype.name, kw, ln, len(buf), buf)
 
         if rtype.reply:
             res = conn.request(buf, rtype.reply).get()
