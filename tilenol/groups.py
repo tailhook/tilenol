@@ -125,6 +125,10 @@ class Group(object):
     def empty(self):
         return not self.all_windows
 
+    @property
+    def visible(self):
+        return bool(self.screen)
+
     def focus(self):
         all = list(self.current_layout.all_visible_windows())
         all.extend(self.floating_windows)

@@ -118,9 +118,10 @@ class EventDispatcher(object):
             log.warning("Map notify for non-existent window %r",
                 ev.window)
         else:
-            win.real.visible = True
-            if win.frame:
-                win.frame.show()
+            if hasattr(win, 'group') and win.group.visible:
+                win.real.visible = True
+                if win.frame:
+                    win.frame.show()
 
     def handle_UnmapNotifyEvent(self, ev):
         if ev.event not in self.frames:
