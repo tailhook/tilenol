@@ -13,7 +13,7 @@ from .mouseregistry import MouseRegistry
 from .ewmh import Ewmh
 from .window import Root, Window
 from .events import EventDispatcher
-from .commands import CommandDispatcher, EnvCommands
+from .commands import CommandDispatcher, EnvCommands, EmulCommands
 from .config import Config
 from .groups import Group, GroupManager
 from .screen import ScreenManager
@@ -62,6 +62,7 @@ class Tilenol(object):
 
         proto = Proto()
         proto.load_xml('xproto')
+        proto.load_xml('xtest')
         proto.load_xml('xinerama')
         proto.load_xml('shm')
         proto.load_xml('randr')
@@ -87,7 +88,6 @@ class Tilenol(object):
 
         inj['theme'] = inj.inject(cfg.theme())
         inj['commander'] = cmd = inj.inject(CommandDispatcher())
-        cmd['env'] = EnvCommands()
         if hasattr(xcore, 'randr'):
             NM = xcore.randr.NotifyMask
             # We only poll for events and use Xinerama for screen querying
@@ -130,6 +130,9 @@ class Tilenol(object):
         inj.inject(inj['ewmh'])
 
         inj.inject(self)
+
+        cmd['env'] = EnvCommands()
+        cmd['emul'] = inj.inject(EmulCommands())
 
         # Register hotkeys as mapping notify can be skipped on inplace restart
         keys.configure_hotkeys()

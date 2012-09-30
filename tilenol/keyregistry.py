@@ -50,6 +50,7 @@ class KeyRegistry(object):
             else:
                 sym = keystr
         else:
+            sym = keystr
             if sym.lower() != sym:
                 mod = self.xcore.ModMask.Shift
             sym = sym.lower()
