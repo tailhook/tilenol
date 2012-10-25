@@ -1,5 +1,8 @@
-import mock
 import unittest
+try:
+    from unittest import mock  # builtin mock in 3.3
+except ImportError:
+    import mock
 from tilenol.xcb import Rectangle
 
 

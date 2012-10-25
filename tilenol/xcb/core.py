@@ -41,7 +41,6 @@ class Const(int):
 
     def __init__(self, val, name):
         self.name = name
-        super().__init__(val)
 
     def __repr__(self):
         return '<{} {}:{}>'.format(self.__class__.__name__, self.name, self)

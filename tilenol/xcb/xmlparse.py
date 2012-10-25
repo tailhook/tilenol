@@ -313,6 +313,8 @@ class Subprotocol(object):
                 pass  # TODO(tailhook) implement exprfield
             elif field.tag == 'reply':
                 pass  # just skip it
+            elif field.tag == 'doc':
+                pass  # docs are simply skipped
             else:
                 raise NotImplementedError(field)
         return items
@@ -391,7 +393,8 @@ class Subprotocol(object):
         items = OrderedDict()
         maxv = 0
         for choice in el.findall('*'):
-            assert choice.tag == 'item'
+            if choice.tag == 'doc':
+                continue
             val = choice.find('value')
             if val is None:
                 bit = choice.find('bit')

@@ -1,5 +1,9 @@
 import unittest
-import mock
+try:
+    from unittest import mock  # builtin mock in 3.3
+except ImportError:
+    import mock
+
 
 class TestClassify(unittest.TestCase):
 
