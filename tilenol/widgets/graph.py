@@ -14,9 +14,10 @@ class _Graph(Widget):
 
     theme = dependency(Theme, 'theme')
 
-    def __init__(self, samples=60, right=False):
+    def __init__(self, samples=60, position='bottom', right=False):
         super().__init__(right=right)
         self.samples = samples
+        self.position = position
         self.values = [0] * self.samples
         self.maxvalue = 0
 
@@ -43,7 +44,10 @@ class _Graph(Widget):
         canvas.set_line_width(self.line_width)
         h = self.height - self.padding.top - self.padding.bottom
         k = h / (self.maxvalue or 1)
-        y = self.height - self.padding.bottom
+        if self.position == 'top':
+            y = 0 + self.padding.top
+        else:
+            y = self.height - self.padding.bottom
         if self.right:
             start = current = r - self.padding.right - self.samples
         else:
@@ -53,6 +57,8 @@ class _Graph(Widget):
             canvas.line_to(current, y - val * k)
             current += 1
         canvas.stroke_preserve()
+        if self.position == 'top':
+            y -= 1
         canvas.line_to(current, y + self.line_width / 2.0)
         canvas.line_to(start, y + self.line_width / 2.0)
         canvas.set_source(self.fill_color)
@@ -63,6 +69,8 @@ class _Graph(Widget):
             return l + self.padding.left + self.padding.right + self.samples, r
 
     def push(self, value):
+        if self.position == 'top':
+            value = -value
         self.values.insert(0, value)
         self.values.pop()
         if not self.fixed_upper_bound:
@@ -73,8 +81,8 @@ class _Graph(Widget):
 class CPUGraph(_Graph):
     fixed_upper_bound = True
 
-    def __init__(self, samples=60, right=False):
-        super().__init__(samples=samples, right=right)
+    def __init__(self, samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
         self.maxvalue = 100
         self.oldvalues = self._getvalues()
 
@@ -110,8 +118,8 @@ def get_meminfo():
 class MemoryGraph(_Graph):
     fixed_upper_bound = True
 
-    def __init__(self, samples=60, right=False):
-        super().__init__(samples=samples, right=right)
+    def __init__(self, samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
         self.oldvalues = self._getvalues()
         self.maxvalue = self.oldvalues['MemTotal']
 
@@ -126,8 +134,8 @@ class MemoryGraph(_Graph):
 class SwapGraph(_Graph):
     fixed_upper_bound = True
 
-    def __init__(self, samples=60, right=False):
-        super().__init__(samples=samples, right=right)
+    def __init__(self, samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
         self.oldvalues = self._getvalues()
         self.maxvalue = self.oldvalues['SwapTotal']
 
