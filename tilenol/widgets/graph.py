@@ -17,7 +17,7 @@ class _Graph(Widget):
     def __init__(self, samples=60, right=False):
         super().__init__(right=right)
         self.samples = samples
-        self.values = [0]*self.samples
+        self.values = [0] * self.samples
         self.maxvalue = 0
 
     def __zorro_di_done__(self):
@@ -42,19 +42,19 @@ class _Graph(Widget):
         canvas.set_source(self.graph_color)
         canvas.set_line_width(self.line_width)
         h = self.height - self.padding.top - self.padding.bottom
-        k = h/(self.maxvalue or 1)
+        k = h / (self.maxvalue or 1)
         y = self.height - self.padding.bottom
         if self.right:
             start = current = r - self.padding.right - self.samples
         else:
             start = current = l + self.padding.left
-        canvas.move_to(current, y - self.values[-1]*k)
+        canvas.move_to(current, y - self.values[-1] * k)
         for val in reversed(self.values):
-            canvas.line_to(current, y-val*k)
+            canvas.line_to(current, y - val * k)
             current += 1
         canvas.stroke_preserve()
-        canvas.line_to(current, y + self.line_width/2.0)
-        canvas.line_to(start, y + self.line_width/2.0)
+        canvas.line_to(current, y + self.line_width / 2.0)
+        canvas.line_to(start, y + self.line_width / 2.0)
         canvas.set_source(self.fill_color)
         canvas.fill()
         if self.right:
@@ -87,13 +87,13 @@ class CPUGraph(_Graph):
     def update(self):
         nval = self._getvalues()
         oval = self.oldvalues
-        busy = (nval[0]+nval[1]+nval[2] - oval[0]-oval[1]-oval[2])
-        total = busy+nval[3]-oval[3]
+        busy = (nval[0] + nval[1] + nval[2] - oval[0] - oval[1] - oval[2])
+        total = busy + nval[3] - oval[3]
         if total:
             # sometimes this value is zero for unknown reason (time shift?)
             # we just skip the value, because it gives us no info about
             # cpu load, if it's zero
-            self.push(busy*100.0/total)
+            self.push(busy * 100.0 / total)
         self.oldvalues = nval
 
 
