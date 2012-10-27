@@ -176,3 +176,30 @@ class NetGraph(_Graph):
     def update(self):
         val = self._getvalues()
         self.push(val)
+
+
+from os import statvfs
+
+
+class HDDGraph(_Graph):
+    fixed_upper_bound = True
+
+    def __init__(
+            self, path='/', type='used',
+            samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
+        self.path = path
+        self.type = type
+        stats = statvfs(self.path)
+        self.maxvalue = stats.f_blocks * stats.f_frsize
+
+    def _getvalues(self):
+        stats = statvfs(self.path)
+        if self.type == 'used':
+            return (stats.f_blocks - stats.f_bfree) * stats.f_frsize
+        else:
+            return stats.f_bavail * stats.f_frsize
+
+    def update(self):
+        val = self._getvalues()
+        self.push(val)
