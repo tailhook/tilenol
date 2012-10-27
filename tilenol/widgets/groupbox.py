@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from cairo import SolidPattern, LINE_JOIN_ROUND
+from cairo import LINE_JOIN_ROUND
 from zorro.di import di, dependency, has_dependencies
 
 from tilenol.groups import GroupManager
@@ -10,8 +10,10 @@ from tilenol.theme import Theme
 from tilenol.window import Window
 
 
-GroupState = namedtuple('GroupState',
-    ('name', 'empty', 'active', 'visible', 'urgent'))
+GroupState = namedtuple(
+    'GroupState',
+    ('name', 'empty', 'active', 'visible', 'urgent')
+)
 
 
 @has_dependencies
@@ -49,7 +51,7 @@ class Groupbox(Widget):
 
     theme = dependency(Theme, 'theme')
 
-    def __init__(self, *, first_letter=False, right=False):
+    def __init__(self, first_letter=False, right=False):
         super().__init__(right=right)
         self.first_letter = first_letter
 
