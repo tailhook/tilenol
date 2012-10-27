@@ -74,7 +74,10 @@ class _Graph(Widget):
         self.values.insert(0, value)
         self.values.pop()
         if not self.fixed_upper_bound:
-            self.maxvalue = max(self.values)
+            if self.position == 'top':
+                self.maxvalue = -min(self.values)
+            else:
+                self.maxvalue = max(self.values)
         self.bar.redraw.emit()
 
 
@@ -146,3 +149,30 @@ class SwapGraph(_Graph):
         val = self._getvalues()
         swap = val['SwapTotal'] - val['SwapFree'] - val['SwapCached']
         self.push(swap)
+
+
+class NetGraph(_Graph):
+    def __init__(
+            self, interface='eth0', direction='down',
+            samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
+        self.filename = '/sys/class/net/{interface}/statistics/{type}'.format(
+            interface=interface,
+            type=direction == 'down' and 'rx_bytes' or 'tx_bytes'
+        )
+        self.oldvalues = 0
+        self.oldvalues = self._getvalues()
+
+    def _getvalues(self):
+        try:
+            with open(self.filename) as file:
+                val = int(file.read())
+                rval = val - self.oldvalues
+                self.oldvalues = val
+                return rval
+        except IOError:
+            return 0
+
+    def update(self):
+        val = self._getvalues()
+        self.push(val)
