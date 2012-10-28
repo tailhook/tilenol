@@ -51,8 +51,9 @@ class Groupbox(Widget):
 
     theme = dependency(Theme, 'theme')
 
-    def __init__(self, first_letter=False, right=False):
+    def __init__(self, filled=False, first_letter=False, right=False):
         super().__init__(right=right)
+        self.filled = filled
         self.first_letter = first_letter
 
     def __zorro_di_done__(self):
@@ -86,6 +87,26 @@ class Groupbox(Widget):
             if self.first_letter:
                 gname = gname[0]
             sx, sy, w, h, ax, ay = canvas.text_extents(gname)
+            if gs.active:
+                canvas.set_source(self.selected_color)
+                if self.filled:
+                    canvas.rectangle(x, 0, ax + between, self.height)
+                    canvas.fill()
+                else:
+                    canvas.rectangle(
+                        x + 2, 2, ax + between - 4, self.height - 4
+                    )
+                    canvas.stroke()
+            elif gs.visible:
+                canvas.set_source(self.subactive_color)
+                if self.filled:
+                    canvas.rectangle(x, 0, ax + between, self.height)
+                    canvas.fill()
+                else:
+                    canvas.rectangle(
+                        x + 2, 2, ax + between - 4, self.height - 4
+                    )
+                    canvas.stroke()
             if gs.urgent:
                 canvas.set_source(self.urgent_color)
             elif gs.empty:
@@ -95,13 +116,5 @@ class Groupbox(Widget):
             canvas.move_to(x + self.padding.left,
                            self.height - self.padding.bottom)
             canvas.show_text(gname)
-            if gs.active:
-                canvas.set_source(self.selected_color)
-                canvas.rectangle(x + 2, 2, ax + between - 4, self.height - 4)
-                canvas.stroke()
-            elif gs.visible:
-                canvas.set_source(self.subactive_color)
-                canvas.rectangle(x + 2, 2, ax + between - 4, self.height - 4)
-                canvas.stroke()
             x += ax + between
         return x, r
