@@ -14,10 +14,11 @@ class _Graph(Widget):
 
     theme = dependency(Theme, 'theme')
 
-    def __init__(self, samples=60, right=False):
+    def __init__(self, samples=60, position='bottom', right=False):
         super().__init__(right=right)
         self.samples = samples
-        self.values = [0]*self.samples
+        self.position = position
+        self.values = [0] * self.samples
         self.maxvalue = 0
 
     def __zorro_di_done__(self):
@@ -42,19 +43,24 @@ class _Graph(Widget):
         canvas.set_source(self.graph_color)
         canvas.set_line_width(self.line_width)
         h = self.height - self.padding.top - self.padding.bottom
-        k = h/(self.maxvalue or 1)
-        y = self.height - self.padding.bottom
+        k = h / (self.maxvalue or 1)
+        if self.position == 'top':
+            y = 0 + self.padding.top
+        else:
+            y = self.height - self.padding.bottom
         if self.right:
             start = current = r - self.padding.right - self.samples
         else:
             start = current = l + self.padding.left
-        canvas.move_to(current, y - self.values[-1]*k)
+        canvas.move_to(current, y - self.values[-1] * k)
         for val in reversed(self.values):
-            canvas.line_to(current, y-val*k)
+            canvas.line_to(current, y - val * k)
             current += 1
         canvas.stroke_preserve()
-        canvas.line_to(current, y + self.line_width/2.0)
-        canvas.line_to(start, y + self.line_width/2.0)
+        if self.position == 'top':
+            y -= 1
+        canvas.line_to(current, y + self.line_width / 2.0)
+        canvas.line_to(start, y + self.line_width / 2.0)
         canvas.set_source(self.fill_color)
         canvas.fill()
         if self.right:
@@ -63,18 +69,23 @@ class _Graph(Widget):
             return l + self.padding.left + self.padding.right + self.samples, r
 
     def push(self, value):
+        if self.position == 'top':
+            value = -value
         self.values.insert(0, value)
         self.values.pop()
         if not self.fixed_upper_bound:
-            self.maxvalue = max(self.values)
+            if self.position == 'top':
+                self.maxvalue = -min(self.values)
+            else:
+                self.maxvalue = max(self.values)
         self.bar.redraw.emit()
 
 
 class CPUGraph(_Graph):
     fixed_upper_bound = True
 
-    def __init__(self, samples=60, right=False):
-        super().__init__(samples=samples, right=right)
+    def __init__(self, samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
         self.maxvalue = 100
         self.oldvalues = self._getvalues()
 
@@ -87,13 +98,13 @@ class CPUGraph(_Graph):
     def update(self):
         nval = self._getvalues()
         oval = self.oldvalues
-        busy = (nval[0]+nval[1]+nval[2] - oval[0]-oval[1]-oval[2])
-        total = busy+nval[3]-oval[3]
+        busy = (nval[0] + nval[1] + nval[2] - oval[0] - oval[1] - oval[2])
+        total = busy + nval[3] - oval[3]
         if total:
             # sometimes this value is zero for unknown reason (time shift?)
             # we just skip the value, because it gives us no info about
             # cpu load, if it's zero
-            self.push(busy*100.0/total)
+            self.push(busy * 100.0 / total)
         self.oldvalues = nval
 
 
@@ -110,8 +121,8 @@ def get_meminfo():
 class MemoryGraph(_Graph):
     fixed_upper_bound = True
 
-    def __init__(self, samples=60, right=False):
-        super().__init__(samples=samples, right=right)
+    def __init__(self, samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
         self.oldvalues = self._getvalues()
         self.maxvalue = self.oldvalues['MemTotal']
 
@@ -126,8 +137,8 @@ class MemoryGraph(_Graph):
 class SwapGraph(_Graph):
     fixed_upper_bound = True
 
-    def __init__(self, samples=60, right=False):
-        super().__init__(samples=samples, right=right)
+    def __init__(self, samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
         self.oldvalues = self._getvalues()
         self.maxvalue = self.oldvalues['SwapTotal']
 
@@ -138,3 +149,57 @@ class SwapGraph(_Graph):
         val = self._getvalues()
         swap = val['SwapTotal'] - val['SwapFree'] - val['SwapCached']
         self.push(swap)
+
+
+class NetGraph(_Graph):
+    def __init__(
+            self, interface='eth0', direction='down',
+            samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
+        self.filename = '/sys/class/net/{interface}/statistics/{type}'.format(
+            interface=interface,
+            type=direction == 'down' and 'rx_bytes' or 'tx_bytes'
+        )
+        self.oldvalues = 0
+        self.oldvalues = self._getvalues()
+
+    def _getvalues(self):
+        try:
+            with open(self.filename) as file:
+                val = int(file.read())
+                rval = val - self.oldvalues
+                self.oldvalues = val
+                return rval
+        except IOError:
+            return 0
+
+    def update(self):
+        val = self._getvalues()
+        self.push(val)
+
+
+from os import statvfs
+
+
+class HDDGraph(_Graph):
+    fixed_upper_bound = True
+
+    def __init__(
+            self, path='/', type='used',
+            samples=60, position='bottom', right=False):
+        super().__init__(samples=samples, position=position, right=right)
+        self.path = path
+        self.type = type
+        stats = statvfs(self.path)
+        self.maxvalue = stats.f_blocks * stats.f_frsize
+
+    def _getvalues(self):
+        stats = statvfs(self.path)
+        if self.type == 'used':
+            return (stats.f_blocks - stats.f_bfree) * stats.f_frsize
+        else:
+            return stats.f_bavail * stats.f_frsize
+
+    def update(self):
+        val = self._getvalues()
+        self.push(val)
