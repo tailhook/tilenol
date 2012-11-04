@@ -145,7 +145,10 @@ class Channel(channel.PipelinedReqChannel):
                     value = self.parse_reply(reply, value)
             fut.set(value)
         elif reply:  # traceback here, if reply is None error should be ignored
-            assert value[0] == 0
+            if value[0] != 0:
+                log.error("Unmatched reply or mistakenly matched event"
+                    " packet: {!r}, data: {!r} \n", value[:32], reply)
+                return
             err = self.parse_error(value)
             lst = traceback.format_list(reply)
             lst.extend(traceback.format_exception_only(
