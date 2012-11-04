@@ -51,7 +51,7 @@ class Groupbox(Widget):
 
     theme = dependency(Theme, 'theme')
 
-    def __init__(self, filled=False, first_letter=False, right=False):
+    def __init__(self, *, filled=False, first_letter=False, right=False):
         super().__init__(right=right)
         self.filled = filled
         self.first_letter = first_letter
