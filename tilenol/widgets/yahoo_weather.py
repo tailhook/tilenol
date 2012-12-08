@@ -36,6 +36,20 @@ class YahooWeather(Widget):
             self, location, *,
             format='{condition_temp}°{units_temperature}',
             metric=True, right=False):
+        """
+        Location should be either a woeid or a name string.
+
+        Change metric to False for imperial units.
+
+        Available format variables:
+            astronomy_sunrise, astronomy_sunset
+            atmosphere_humidity, atmosphere_visibility,
+            atmosphere_pressure, atmosphere_rising
+            condition_text, condition_code, condition_temp, condition_date
+            location_city. location_region, location_country
+            units_temperature, units_distance, units_pressure, units_speed
+            wind_chill, wind_direction, wind_speed
+        """
         super().__init__(right=right)
         self.location = location
         self.format = format
