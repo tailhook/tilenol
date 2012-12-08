@@ -63,17 +63,15 @@ class YahooWeather(Widget):
         self.padding = bar.text_padding
         try:
             woeid = int(self.location)
+            self.callback(woeid)
         except ValueError:
-            woeid = self.get_woeid(self.location)  # loopy-loop
-        self.url = "{0}{1}".format(
-            WEATHER_URL,
-            urlencode({'w': woeid, 'u': self.metric and 'c' or 'f'})
-        )
-        self.thread = threading.Thread(target=self.read_loop)
-        self.thread.daemon = True
-        self.thread.start()
+            self.thread = threading.Thread(
+                target=self.fetch_woeid, args=(self.location, self.callback)
+            )
+            self.thread.daemon = True
+            self.thread.start()
 
-    def get_woeid(self, location):
+    def fetch_woeid(self, location, callback):
         url = "{0}{1}".format(
             QUERY_URL,
             urlencode({
@@ -83,24 +81,44 @@ class YahooWeather(Widget):
                 'format': 'xml'
             })
         )
-        try:
-            response = urlopen(url).read()
-            data = minidom.parseString(response)
-            return data.getElementsByTagName("woeid")[0].firstChild.nodeValue
-        except:
-            return None
+        woeid = None
+        while woeid is None:
+            try:
+                response = urlopen(url).read()
+                data = minidom.parseString(response)
+                elem = data.getElementsByTagName("woeid")[0]
+                woeid = elem.firstChild.nodeValue
+            except:
+                time.sleep(60)
+            else:
+                if woeid is None:
+                    time.sleep(60)
+        callback(woeid)
 
     def read_loop(self):
         while True:
-            self.text = self.format.format(**self.fetch())
+            result = self.fetch()
+            if result is None:
+                self.text = '--'
+            else:
+                self.text = self.format.format(**result)
             time.sleep(600)
+
+    def callback(self, woeid):
+        self.url = "{0}{1}".format(
+            WEATHER_URL,
+            urlencode({'w': woeid, 'u': self.metric and 'c' or 'f'})
+        )
+        self.thread = threading.Thread(target=self.read_loop)
+        self.thread.daemon = True
+        self.thread.start()
 
     def fetch(self):
         try:
             response = urlopen(self.url).read()
             dom = minidom.parseString(response)
         except:
-            return '--'
+            return None
         data = dict()
         for tag, attrs in YahooWeather.structure:
             elem = dom.getElementsByTagNameNS(WEATHER_NS, tag)[0]
