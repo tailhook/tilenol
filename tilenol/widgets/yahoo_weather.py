@@ -98,9 +98,7 @@ class YahooWeather(Widget):
     def read_loop(self):
         while True:
             result = self.fetch()
-            if result is None:
-                self.text = '--'
-            else:
+            if result is not None:
                 self.text = self.format.format(**result)
             time.sleep(600)
 
