@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 
 
-import threading
-import time
 from urllib.parse import urlencode
-from urllib.request import urlopen
 from xml.dom import minidom
 
+from zorro import gethub, sleep
+from zorro.http import HTTPClient
 from zorro.di import has_dependencies, dependency
 
 from .base import Widget
 from tilenol.theme import Theme
 
 
-QUERY_URL = 'http://query.yahooapis.com/v1/public/yql?'
-WEATHER_URL = 'http://weather.yahooapis.com/forecastrss?'
+QUERY_URL = 'query.yahooapis.com'
+QUERY_URI = '/v1/public/yql'
+WEATHER_URL = 'weather.yahooapis.com'
+WEATHER_URI = '/forecastrss?'
 WEATHER_NS = 'http://xml.weather.yahoo.com/ns/rss/1.0'
 
 
@@ -61,60 +62,48 @@ class YahooWeather(Widget):
         self.font = bar.font
         self.color = bar.text_color_pat
         self.padding = bar.text_padding
+        gethub().do_spawnhelper(self._update_handler)
+
+    def _update_handler(self):
         try:
             woeid = int(self.location)
-            self.callback(woeid)
         except ValueError:
-            self.thread = threading.Thread(
-                target=self.fetch_woeid, args=(self.location, self.callback)
-            )
-            self.thread.daemon = True
-            self.thread.start()
-
-    def fetch_woeid(self, location, callback):
-        url = "{0}{1}".format(
-            QUERY_URL,
-            urlencode({
-                'q': 'select woeid from geo.places where text="{0}"'.format(
-                    location
-                ),
-                'format': 'xml'
-            })
+            woeid = self.fetch_woeid()
+        self.uri = "{0}{1}".format(
+            WEATHER_URI,
+            urlencode({'w': woeid, 'u': self.metric and 'c' or 'f'})
         )
-        woeid = None
-        while woeid is None:
-            try:
-                response = urlopen(url).read()
-                data = minidom.parseString(response)
-                elem = data.getElementsByTagName("woeid")[0]
-                woeid = elem.firstChild.nodeValue
-            except:
-                time.sleep(60)
-            else:
-                if woeid is None:
-                    time.sleep(60)
-        callback(woeid)
-
-    def read_loop(self):
         while True:
             result = self.fetch()
             if result is not None:
                 self.text = self.format.format(**result)
-            time.sleep(600)
+            sleep(600)
 
-    def callback(self, woeid):
-        self.url = "{0}{1}".format(
-            WEATHER_URL,
-            urlencode({'w': woeid, 'u': self.metric and 'c' or 'f'})
-        )
-        self.thread = threading.Thread(target=self.read_loop)
-        self.thread.daemon = True
-        self.thread.start()
+    def fetch_woeid(self):
+        woeid = None
+        while woeid is None:
+            try:
+                response = HTTPClient(QUERY_URL).request(QUERY_URI, query={
+                    'q': "select woeid from geo.places"
+                    "where text='{0}'".format(self.location),
+                    'format': 'xml'
+                }, headers={'Host': QUERY_URL})
+                data = minidom.parseString(response.body.decode('ascii'))
+                elem = data.getElementsByTagName("woeid")[0]
+                woeid = elem.firstChild.nodeValue
+            except:
+                sleep(60)
+            else:
+                if woeid is None:
+                    sleep(60)
+        return woeid
 
     def fetch(self):
         try:
-            response = urlopen(self.url).read()
-            dom = minidom.parseString(response)
+            response = HTTPClient(WEATHER_URL).request(
+                self.uri, headers={'Host': WEATHER_URL}
+            )
+            dom = minidom.parseString(response.body.decode('ascii'))
         except:
             return None
         data = dict()
