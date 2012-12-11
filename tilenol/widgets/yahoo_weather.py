@@ -84,7 +84,7 @@ class YahooWeather(Widget):
         while woeid is None:
             try:
                 response = HTTPClient(QUERY_URL).request(QUERY_URI, query={
-                    'q': "select woeid from geo.places"
+                    'q': "select woeid from geo.places "
                     "where text='{0}'".format(self.location),
                     'format': 'xml'
                 }, headers={'Host': QUERY_URL})
