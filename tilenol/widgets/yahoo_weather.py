@@ -3,6 +3,7 @@
 
 from urllib.parse import urlencode
 from xml.dom import minidom
+import json
 import logging
 
 from zorro import gethub, sleep
@@ -88,11 +89,13 @@ class YahooWeather(Widget):
                 response = HTTPClient(QUERY_URL).request(QUERY_URI, query={
                     'q': "select woeid from geo.places "
                     "where text='{0}'".format(self.location),
-                    'format': 'xml'
+                    'format': 'json'
                 }, headers={'Host': QUERY_URL})
-                data = minidom.parseString(response.body.decode('ascii'))
-                elem = data.getElementsByTagName("woeid")[0]
-                woeid = elem.firstChild.nodeValue
+                data = json.loads(response.body.decode('ascii'))['query']
+                if data['count'] > 1:
+                    woeid = data['results']['place'][0]['woeid']
+                else:
+                    woeid = data['results']['place']['woeid']
             except Exception as e:
                 log.exception("Error fetching woeid", exc_info=e)
                 sleep(60)
