@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 from xml.etree import ElementTree as ET
 import json
 import logging
@@ -14,13 +14,12 @@ import cairo
 
 from .base import Widget
 from tilenol.theme import Theme
+from tilenol.util import fetchurl
 
 
 log = logging.getLogger(__name__)
-QUERY_URL = 'query.yahooapis.com'
-QUERY_URI = '/v1/public/yql'
-WEATHER_URL = 'weather.yahooapis.com'
-WEATHER_URI = '/forecastrss?'
+QUERY_URL = 'http://query.yahooapis.com/v1/public/yql'
+WEATHER_URL = 'http://weather.yahooapis.com/forecastrss?'
 WEATHER_NS = 'http://xml.weather.yahoo.com/ns/rss/1.0'
 DEFAULT_PIC = 'http://l.yimg.com/a/i/us/nws/weather/gr/{condition_code}d.png'
 
@@ -83,7 +82,7 @@ class YahooWeather(Widget):
         except ValueError:
             woeid = self.fetch_woeid()
         self.uri = "{0}{1}".format(
-            WEATHER_URI,
+            WEATHER_URL,
             urlencode({'w': woeid, 'u': self.metric and 'c' or 'f'})
         )
         while True:
@@ -100,12 +99,8 @@ class YahooWeather(Widget):
             img_url = self.picture_url.format_map(data)
             if img_url == self.oldimg_url and self.image:
                 return
-            parsed_url = urlparse(img_url)
-            resp = HTTPClient(parsed_url.hostname).request(parsed_url.path,
-                headers={
-                'Host': parsed_url.hostname,
-                })
-            self.image = cairo.ImageSurface.create_from_png(BytesIO(resp.body))
+            data = fetchurl(img_url)
+            self.image = cairo.ImageSurface.create_from_png(BytesIO(data))
             self.oldimg_url = img_url
         except Exception as e:
             log.exception("Error fetching picture %r", img_url, exc_info=e)
@@ -115,12 +110,12 @@ class YahooWeather(Widget):
         woeid = None
         while woeid is None:
             try:
-                response = HTTPClient(QUERY_URL).request(QUERY_URI, query={
+                data = fetchurl(QUERY_URL, query={
                     'q': "select woeid from geo.places "
                     "where text='{0}'".format(self.location),
                     'format': 'json'
-                }, headers={'Host': QUERY_URL})
-                data = json.loads(response.body.decode('ascii'))['query']
+                })
+                data = json.loads(data.decode('ascii'))['query']
                 if data['count'] > 1:
                     woeid = data['results']['place'][0]['woeid']
                 else:
@@ -135,10 +130,8 @@ class YahooWeather(Widget):
 
     def fetch(self):
         try:
-            response = HTTPClient(WEATHER_URL).request(
-                self.uri, headers={'Host': WEATHER_URL}
-            )
-            xml = ET.fromstring(response.body.decode('ascii'))
+            data = fetchurl(self.uri)
+            xml = ET.fromstring(data.decode('ascii'))
         except Exception as e:
             log.exception("Error fetching weather info", exc_info=e)
             return None
