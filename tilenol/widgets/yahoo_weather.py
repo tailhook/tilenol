@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
 
-from urllib.parse import urlencode
-from xml.dom import minidom
+from urllib.parse import urlencode, urlparse
+from xml.etree import ElementTree as ET
 import json
 import logging
+from io import BytesIO
 
 from zorro import gethub, sleep
 from zorro.http import HTTPClient
 from zorro.di import has_dependencies, dependency
+import cairo
 
 from .base import Widget
 from tilenol.theme import Theme
@@ -20,30 +22,34 @@ QUERY_URI = '/v1/public/yql'
 WEATHER_URL = 'weather.yahooapis.com'
 WEATHER_URI = '/forecastrss?'
 WEATHER_NS = 'http://xml.weather.yahoo.com/ns/rss/1.0'
+DEFAULT_PIC = 'http://l.yimg.com/a/i/us/nws/weather/gr/{condition_code}d.png'
 
 
 @has_dependencies
 class YahooWeather(Widget):
 
-    structure = (
-        ('location', ('city', 'region', 'country')),
-        ('units', ('temperature', 'distance', 'pressure', 'speed')),
-        ('wind', ('chill', 'direction', 'speed')),
-        ('atmosphere', ('humidity', 'visibility', 'pressure', 'rising')),
-        ('astronomy', ('sunrise', 'sunset')),
-        ('condition', ('text', 'code', 'temp', 'date'))
+    tags_to_fetch = (
+        'location',
+        'units',
+        'wind',
+        'atmosphere',
+        'astronomy',
+        'condition',
     )
 
     theme = dependency(Theme, 'theme')
 
     def __init__(
             self, location, *,
+            picture_url=DEFAULT_PIC,
             format='{condition_temp}°{units_temperature}',
             metric=True, right=False):
         """
         Location should be either a woeid or a name string.
 
         Change metric to False for imperial units.
+
+        Set `picture_url` to None to hide picture.
 
         Available format variables:
             astronomy_sunrise, astronomy_sunset
@@ -58,7 +64,11 @@ class YahooWeather(Widget):
         self.location = location
         self.format = format
         self.metric = metric
+        self.picture_url = picture_url
+
         self.text = '--'
+        self.image = None
+        self.oldimg_url = None
 
     def __zorro_di_done__(self):
         bar = self.theme.bar
@@ -79,8 +89,27 @@ class YahooWeather(Widget):
         while True:
             result = self.fetch()
             if result is not None:
-                self.text = self.format.format(**result)
+                self.text = self.format.format_map(result)
+                if self.picture_url is not None:
+                    self.fetch_image(result)
             sleep(600)
+
+    def fetch_image(self, data):
+        img_url = None
+        try:
+            img_url = self.picture_url.format_map(data)
+            if img_url == self.oldimg_url and self.image:
+                return
+            parsed_url = urlparse(img_url)
+            resp = HTTPClient(parsed_url.hostname).request(parsed_url.path,
+                headers={
+                'Host': parsed_url.hostname,
+                })
+            self.image = cairo.ImageSurface.create_from_png(BytesIO(resp.body))
+            self.oldimg_url = img_url
+        except Exception as e:
+            log.exception("Error fetching picture %r", img_url, exc_info=e)
+            self.image = None
 
     def fetch_woeid(self):
         woeid = None
@@ -109,27 +138,48 @@ class YahooWeather(Widget):
             response = HTTPClient(WEATHER_URL).request(
                 self.uri, headers={'Host': WEATHER_URL}
             )
-            dom = minidom.parseString(response.body.decode('ascii'))
+            xml = ET.fromstring(response.body.decode('ascii'))
         except Exception as e:
             log.exception("Error fetching weather info", exc_info=e)
             return None
         data = dict()
-        for tag, attrs in YahooWeather.structure:
-            elem = dom.getElementsByTagNameNS(WEATHER_NS, tag)[0]
-            for attr in attrs:
-                data['{0}_{1}'.format(tag, attr)] = elem.getAttribute(attr)
+        for tag in self.tags_to_fetch:
+            elem = xml.find('.//{%s}%s' % (WEATHER_NS, tag))
+            for attr, val in elem.attrib.items():
+                data['{0}_{1}'.format(tag, attr)] = val
         return data
 
     def draw(self, canvas, l, r):
         self.font.apply(canvas)
-        canvas.set_source(self.color)
         _, _, w, h, _, _ = canvas.text_extents(self.text)
+        if self.image:
+            iw = self.image.get_width()
+            ih = self.image.get_height()
+            imh = self.height
+            imw = int(iw/ih*imh + 0.5)
+            scale = ih/imh
+            if self.right:
+                x = r - w - self.padding.right - imw
+            else:
+                x = l
+            y = 0
+            pat = cairo.SurfacePattern(self.image)
+            pat.set_matrix(cairo.Matrix(
+                xx=scale, yy=scale,
+                x0=-x*scale, y0=-y*scale))
+            pat.set_filter(cairo.FILTER_BEST)
+            canvas.set_source(pat)
+            canvas.rectangle(x, 0, imw, imh)
+            canvas.fill()
+        else:
+            imw = 0
+        canvas.set_source(self.color)
         if self.right:
             x = r - self.padding.right - w
-            r -= self.padding.left + self.padding.right + w
+            r -= self.padding.left + self.padding.right + w + imw
         else:
             x = l + self.padding.left
-            l += self.padding.left + self.padding.right + w
+            l += self.padding.left + self.padding.right + w + imw
         canvas.move_to(x, self.height - self.padding.bottom)
         canvas.show_text(self.text)
         return l, r
