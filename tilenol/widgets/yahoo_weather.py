@@ -3,6 +3,7 @@
 
 from urllib.parse import urlencode
 from xml.dom import minidom
+import logging
 
 from zorro import gethub, sleep
 from zorro.http import HTTPClient
@@ -12,6 +13,7 @@ from .base import Widget
 from tilenol.theme import Theme
 
 
+log = logging.getLogger(__name__)
 QUERY_URL = 'query.yahooapis.com'
 QUERY_URI = '/v1/public/yql'
 WEATHER_URL = 'weather.yahooapis.com'
@@ -91,7 +93,8 @@ class YahooWeather(Widget):
                 data = minidom.parseString(response.body.decode('ascii'))
                 elem = data.getElementsByTagName("woeid")[0]
                 woeid = elem.firstChild.nodeValue
-            except:
+            except Exception as e:
+                log.exception("Error fetching woeid", exc_info=e)
                 sleep(60)
             else:
                 if woeid is None:
@@ -104,7 +107,8 @@ class YahooWeather(Widget):
                 self.uri, headers={'Host': WEATHER_URL}
             )
             dom = minidom.parseString(response.body.decode('ascii'))
-        except:
+        except Exception as e:
+            log.exception("Error fetching weather info", exc_info=e)
             return None
         data = dict()
         for tag, attrs in YahooWeather.structure:
