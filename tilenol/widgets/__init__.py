@@ -6,3 +6,4 @@ from .tray import Systray
 from .title import Title, Icon
 from .graph import CPUGraph, MemoryGraph, SwapGraph, NetGraph, HDDGraph
 from .battery import Battery
+from .yahoo_weather import YahooWeather
