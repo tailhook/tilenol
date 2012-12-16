@@ -2,6 +2,7 @@ import os.path
 import shlex
 import re
 import logging
+import math
 from itertools import chain
 
 
@@ -119,10 +120,49 @@ class Config(object):
 
     def keys(self):
         for k, v in self.config.get_config('hotkeys', {}).items():
-            if isinstance(v, str):
-                yield k, shlex.split(v)
+            yield k, self._command(v)
+
+    @staticmethod
+    def _command(cmd):
+        if isinstance(cmd, str):
+            return shlex.split(cmd)
+        else:
+            return cmd
+
+    def gestures(self):
+        from tilenol.gestures import directions
+        settings = {  # global settings are absolute values
+            'detect-distance': 50,
+            'commit-distance': 600,
+            'char': "▲",
+            }
+        supported_gestures = {'{}f-{}'.format(fing, dir)
+            for fing in range(2, 6) for dir in directions}
+        gest = self.config.get_config('gestures', {})
+        gest.update(self.data.get('gestures', {}))
+        if 'settings' in gest:
+            settings.update(gest['settings'])
+        res = {}
+        for k, v in gest.items():
+            if k == 'settings':
+                continue
+            elif k in supported_gestures:
+                f, dir = k.split('-')
+                val = {}
+                val.update(settings)
+                if 'action' not in v and '=' not in v:
+                    val['action'] = self._command(v)
+                else:
+                    val.update(v)
+                    if '=' in v:
+                        val['action'] = self._command(v['='])
+                    else:
+                        val['action'] = self._command(val['action'])
+                val['condition'] = directions[dir]
+                res[k] = val
             else:
-                yield k, v
+                log.warning('Gesture %r is not supported', k)
+        return res
 
     def theme(self):
         from tilenol.theme import Theme

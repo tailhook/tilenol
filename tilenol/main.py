@@ -20,6 +20,7 @@ from .screen import ScreenManager
 from .classify import Classifier
 from .theme import Theme
 from . import randr
+from .gestures import Gestures
 
 
 log = logging.getLogger(__name__)
@@ -114,6 +115,7 @@ class Tilenol(object):
         inj['key-registry'] = inj.inject(keys)
         mouse = MouseRegistry()
         inj['mouse-registry'] = inj.inject(mouse)
+        inj['gestures'] = inj.inject(Gestures())
 
         gman = inj.inject(GroupManager(map(inj.inject, cfg.groups())))
         cmd['groups'] = gman
