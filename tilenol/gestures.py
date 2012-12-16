@@ -122,12 +122,12 @@ class Gestures(object):
                     dy = struct.y - initialy
                     angle = atan2(dx, dy)
                     dist = sqrt(dx*dx + dy*dy)
+                    percent = dist / cfg['commit-distance']
+                    full = percent >= 1
                     if not cond(angle) or dist < cfg['detect-distance']:
                         for f in callbacks:
                             f(name, percent, UNDO, cfg)
                     else:
-                        percent = dist / cfg['commit-distance']
-                        full = percent >= 1
                         state = FULL if full else PARTIAL
                         for f in callbacks:
                             f(name, percent, state, cfg)
