@@ -87,6 +87,18 @@ class GroupManager(object):
         self.commander['screen'] = ngr.screen
         self.group_changed.emit()
 
+    def cmd_switch_next(self):
+        ogr = self.commander['group']
+        n = self.groups.index(ogr)
+        if n+1 < len(self.groups):
+            self.cmd_switch(self.groups[n+1].name)
+
+    def cmd_switch_prev(self):
+        ogr = self.commander['group']
+        n = self.groups.index(ogr)
+        if n > 0:
+            self.cmd_switch(self.groups[n-1].name)
+
     def cmd_move_window_to(self, name):
         ngr = self.by_name[name]
         if 'window' not in self.commander:
