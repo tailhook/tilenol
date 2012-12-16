@@ -9,6 +9,8 @@ from zorro.di import has_dependencies, dependency
 from tilenol.xcb import shm
 from .event import Event
 from .commands import CommandDispatcher
+from .config import Config
+
 
 GRAD = pi/180
 directions = {
@@ -21,9 +23,6 @@ directions = {
     'left': lambda a, max=-70*GRAD, min=-110*GRAD: min < a < max,
     'upleft': lambda a, max=-110*GRAD, min=-160*GRAD: min <= a <= max,
     }
-from .config import Config
-
-
 SYNAPTICS_SHM = 23947
 START = marker_object('gestures.START')
 PARTIAL = marker_object('gestures.PARTIAL')
@@ -75,8 +74,8 @@ class Gestures(object):
         shmid = shm.shmget(SYNAPTICS_SHM, ctypes.sizeof(SynapticsSHM), 0)
         if shmid < 0:
             raise RuntimeError("No synaptics driver loaded")
-        addr = shm.shmat(shmid, None, 0)
-        if addr < 0:
+        addr = shm.shmat(shmid, None, shm.SHM_RDONLY)
+        if addr > (1 << 63):  # (int)addr < 0
             raise RuntimeError("Can't attach SHM")
         try:
             struct = ctypes.cast(addr, ctypes.POINTER(SynapticsSHM))
@@ -96,7 +95,7 @@ class Gestures(object):
                 full = False
                 name = None
                 while initialf == struct.numFingers:
-                    sleep(0.1)
+                    sleep(0.05)
                     dx = struct.x - initialx
                     dy = struct.y - initialy
                     angle = atan2(dx, dy)
@@ -117,7 +116,7 @@ class Gestures(object):
                     f(name, 0, START, cfg)
 
                 while initialf == struct.numFingers:
-                    sleep(0.1)
+                    sleep(0.05)
                     dx = struct.x - initialx
                     dy = struct.y - initialy
                     angle = atan2(dx, dy)

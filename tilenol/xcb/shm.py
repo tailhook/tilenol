@@ -7,10 +7,13 @@ from .pixbuf import PixbufBase
 IPC_CREAT = 0o1000
 IPC_PRIVATE = 0
 IPC_RMID = 0
-
+SHM_RDONLY = 0o10000
+SHM_RND = 0o20000
+SHM_REMAP = 0o40000
+SHM_EXEC = 0o100000
 
 try:
-    rt = ctypes.CDLL('librt.so')
+    rt = ctypes.CDLL('librt.so', use_errno=True)
     shmget = rt.shmget
     shmget.argtypes = [ctypes.c_int, ctypes.c_size_t, ctypes.c_int]
     shmget.restype = ctypes.c_int
