@@ -1,0 +1,6 @@
+3f-left: emul button 8
+3f-right: emul button 9
+4f-down: screen toggle_bars
+4f-up: window toggle_border
+4f-left: groups switch_prev
+4f-right: groups switch_next

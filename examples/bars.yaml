@@ -4,6 +4,7 @@
   - Groupbox:
       first_letter: yes
   - -----------
+  - Gesture
   - Icon
   - Title
   right:
@@ -12,5 +13,7 @@
   - CPUGraph
   - MemoryGraph
   - SwapGraph
+  - -----------
+  - Systray
   - -----------
   - Clock
