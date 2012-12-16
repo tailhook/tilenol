@@ -69,5 +69,26 @@ class EmulCommands(object):
             deviceid=0,
             )
 
+    def cmd_button(self, num):
+        num = int(num)
+        self.xcore.xtest.FakeInput(
+            type=4,
+            detail=num,
+            time=0,
+            root=self.xcore.root_window,
+            rootX=0,
+            rootY=0,
+            deviceid=0,
+            )
+        self.xcore.xtest.FakeInput(
+            type=5,
+            detail=num,
+            time=30,
+            root=self.xcore.root_window,
+            rootX=0,
+            rootY=0,
+            deviceid=0,
+            )
+
 
 
