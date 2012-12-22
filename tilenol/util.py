@@ -1,4 +1,6 @@
 from zorro.http import HTTPClient
+from zorro import gethub
+
 from urllib.parse import splittype, splithost, urlencode
 
 
@@ -15,7 +17,8 @@ def fetchurl(url, query=None):
     if proto != 'http':
         raise RuntimeError("Unsupported protocol HTTP")
     host, tail = splithost(tail)
-    cli = HTTPClient(host)
+    ip = gethub().dns_resolver.gethostbyname(host)
+    cli = HTTPClient(ip)
     resp = cli.request(tail, headers={'Host': host})
     if resp.status.endswith('200 OK'):
         return resp.body

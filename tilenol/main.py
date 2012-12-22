@@ -6,6 +6,8 @@ import signal
 import logging
 
 from zorro.di import DependencyInjector, di, has_dependencies, dependency
+from zorro import gethub
+from zorro import dns
 
 from .xcb import Connection, Proto, Core, Keysyms, Rectangle
 from .keyregistry import KeyRegistry
@@ -72,6 +74,8 @@ class Tilenol(object):
         self.root_window = Root(conn.init_data['roots'][0]['root'])
 
         inj = DependencyInjector()
+        inj['dns'] = dns.Resolver(dns.Config.system_config())
+        gethub().dns_resolver = inj['dns']
         inj['xcore'] = xcore = Core(conn)
         inj['keysyms'] = keysyms = Keysyms()
         keysyms.load_default()
