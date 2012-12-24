@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=XSession
+Exec=runtilenol
+TryExec=runtilenol
+Name=Tilenol
+Comment=A simple tiling window manager written in python
