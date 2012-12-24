@@ -2,6 +2,7 @@ import os.path
 import threading
 import time
 
+
 from cairo import SolidPattern
 from zorro.di import has_dependencies, dependency
 
@@ -29,9 +30,12 @@ class BatteryStatus:
     def read_battery( self ):
         try: # pick the battery charge files which is appropriate to your machine
             self._now = float( self.get_file( self.files[ ENERGY_NOW ] ) )
-        except FileNotFoundError:
-            self.files = ENERGY_FILES if self.files == CHARGE_FILES else CHARGE_FILES
-            self._now = float( self.get_file( self.files[ ENERGY_NOW ] ) )
+        except IOError as e: # FileNotFoundError: in python 3.3
+            if e.errno == 2: # file not found
+                self.files = ENERGY_FILES if self.files == CHARGE_FILES else CHARGE_FILES
+                self._now = float( self.get_file( self.files[ ENERGY_NOW ] ) )
+            else:
+                raise
         except OSError: # device not found? - make up a value
             self._now = 1000
 
