@@ -1,6 +1,7 @@
 import os.path
 import threading
 import time
+import errno
 
 
 from cairo import SolidPattern
@@ -26,12 +27,12 @@ class BatteryStatus:
         # set up the initial battery charge files - these will change as required
         self.files = ENERGY_FILES
         self.path = path
-    
+
     def read_battery( self ):
         try: # pick the battery charge files which is appropriate to your machine
             self._now = float( self.get_file( self.files[ ENERGY_NOW ] ) )
         except IOError as e: # FileNotFoundError: in python 3.3
-            if e.errno == 2: # file not found
+            if e.errno == errno.ENOENT: # file not found
                 self.files = ENERGY_FILES if self.files == CHARGE_FILES else CHARGE_FILES
                 self._now = float( self.get_file( self.files[ ENERGY_NOW ] ) )
             else:
@@ -39,7 +40,7 @@ class BatteryStatus:
         except OSError: # device not found? - make up a value
             self._now = 1000
 
-        try: # ...but sometimes, plugging in/out the power causes something to fail, if so make it up, 
+        try: # ...but sometimes, plugging in/out the power causes something to fail, if so make it up,
             self._full = float( self.get_file( self.files[ ENERGY_FULL ] ) )
             self._power = float( self.get_file( self.files[ POWER_NOW ] ) )
             self._status = self.get_file( 'status' ).lower()
@@ -47,7 +48,7 @@ class BatteryStatus:
             self._full = self._now
             self._power = self._now*MIN_IN_HOUR
             self._status = 'unknown'
-        
+
     def get_file( self, name ):
         with open( os.path.join( self.path, name ), 'rt' ) as f:
             return f.read().strip()
@@ -75,7 +76,7 @@ class BatteryStatus:
     @property
     def has_full_charge( self ):
         return self.charge > 0.99 or self._power == 0
-        
+
 
 @has_dependencies
 class Battery(Widget):
