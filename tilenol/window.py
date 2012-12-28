@@ -7,6 +7,7 @@ import cairo
 from zorro.di import di, has_dependencies, dependency
 
 from .xcb import Core, Rectangle, XError
+from .xcb.core import Atom
 from .icccm import SizeHints, is_window_needs_input
 from .commands import CommandDispatcher
 from .ewmh import Ewmh
@@ -355,6 +356,16 @@ class Window(BaseWindow):
                 type=self.xcore.atom.UTF8_STRING,
                 format=8,
                 data=value)
+        elif(isinstance(value, tuple)
+            and all(isinstance(i, Atom) for i in value)):
+            self.xcore.raw.ChangeProperty(
+                window=self,
+                mode=self.xcore.PropMode.Replace,
+                property=getattr(self.xcore.atom, name),
+                type=self.xcore.atom.ATOM,
+                format=32,
+                data_len=len(value),
+                data=struct.pack('<{}L'.format(len(value)), *value))
         elif value is None:
             self.xcore.raw.DeleteProperty(
                 window=self,
@@ -421,6 +432,20 @@ class Window(BaseWindow):
     def cmd_toggle_border(self):
         if self.frame:
             self.frame.toggle_border()
+
+    def client_message(self, ev):
+        if ev.type == self.xcore.atom._NET_WM_STATE:
+            op, p1, p2, src, _ = struct.unpack('<5L', ev.data)
+            if op is 1:  # _NET_WM_STATE_ADD
+                atom = self.xcore.atom._NET_WM_STATE_FULLSCREEN
+                if atom == p1:
+                    self.set_property("_NET_WM_STATE", (atom,))
+            elif op is 0:   # _NET_WM_STATE_REMOVE
+                atom = self.xcore.atom._NET_WM_STATE_FULLSCREEN
+                if atom == p1:
+                    self.set_property("_NET_WM_STATE", None)
+            elif op is 2:   # _NET_WM_STATE_TOGGLE
+                pass  # TODO(tailhook) implement me
 
 
 class DisplayWindow(Window):
