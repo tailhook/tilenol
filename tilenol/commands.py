@@ -1,10 +1,15 @@
+import os.path
 from functools import partial
 import subprocess
+import logging
 
 from zorro.di import has_dependencies, dependency
 
 from .event import Event
 from .xcb import Core
+
+
+log = logging.getLogger(__name__)
 
 
 class Events(dict):
@@ -39,6 +44,40 @@ class EnvCommands(object):
 
     def cmd_shell(self, *args):
         subprocess.Popen(args, shell=True)
+
+    def cmd_backlight_inc(self, *args, **kw):
+        self.backlight(1, *args, **kw)
+
+    def cmd_backlight_dec(self, *args, **kw):
+        self.backlight(-1, *args, **kw)
+
+    def backlight(self, inc, device_name=None, steps=10,
+                             basedir='/sys/class/backlight'):
+        if device_name is None:
+            for device_name in os.listdir(basedir):
+                if os.path.isdir(os.path.join(basedir, device_name)):
+                    break
+            else:
+                log.warning("No backlight device found")
+                return
+
+        with open(os.path.join(basedir,
+                               device_name, 'actual_brightness'), 'rt') as f:
+            curvalue = int(f.read())
+        with open(os.path.join(basedir,
+                               device_name, 'max_brightness'), 'rt') as f:
+            maxvalue = int(f.read())
+        step_no = int(curvalue / (maxvalue/steps)+0.99) + inc
+        print("DEVICE_NAME", device_name, curvalue, maxvalue, step_no)
+        if step_no <= 0:
+            val = 0
+        elif step_no > steps - 1:
+            val = maxvalue
+        else:
+            val = int(step_no * (maxvalue/steps))
+        with open(os.path.join(basedir,
+                               device_name, 'brightness'), 'wt') as f:
+            f.write(str(val))
 
 @has_dependencies
 class EmulCommands(object):
