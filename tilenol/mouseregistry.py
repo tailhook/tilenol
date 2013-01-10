@@ -6,17 +6,31 @@ from .commands import CommandDispatcher
 
 class Drag(object):
 
+    start_distance = 5
+
     def __init__(self, win, x, y):
         self.win = win
         if self.win.frame:
             self.win = self.win.frame
-        self.hint = self.win.add_hint()
-        self.start(x, y)
-        self.update_hint()
+        self.drag_started = False
+        self.start_x = x
+        self.start_y = y
 
     def moved_to(self, x, y):
-        self.motion(x + self.x, y + self.y)
-        self.update_hint()
+        if self.drag_started:
+            self.motion(x + self.x, y + self.y)
+            self.update_hint()
+        else:
+            dist = abs(self.start_x - x) + abs(self.start_y - y)
+            if dist > self.start_distance:
+                self.drag_started = True
+                if not self.win.content.lprops.floating:
+                    self.win.content.make_floating()
+                self.hint = self.win.add_hint()
+                self.start(self.start_x, self.start_y)
+                self.motion(x + self.x, y + self.y)
+                self.update_hint()
+
 
     def update_hint(self):
         sz = self.win.done.size
@@ -47,7 +61,8 @@ class Drag(object):
             hsz.width, hsz.height))
 
     def stop(self):
-        self.hint.destroy()
+        if hasattr(self, 'hint'):
+            self.hint.destroy()
 
 
 class DragMove(Drag):
@@ -171,9 +186,7 @@ class MouseRegistry(object):
         if 'pointer_window' not in self.commander:
             return
         win = self.commander['pointer_window']
-        if not win.lprops.floating:
-            win.make_floating()
-        else:
+        if win.lprops.floating:
             win.frame.restack(self.core.StackMode.TopIf)
         if ev.detail == 1:
             self.drag = DragMove(win, ev.root_x, ev.root_y)
