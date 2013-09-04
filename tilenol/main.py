@@ -9,7 +9,7 @@ from zorro.di import DependencyInjector, di, has_dependencies, dependency
 from zorro import gethub
 from zorro import dns
 
-from .xcb import Connection, Proto, Core, Keysyms, Rectangle
+from .xcb import Connection, Proto, Core, Keysyms, Rectangle, XError
 from .keyregistry import KeyRegistry
 from .mouseregistry import MouseRegistry
 from .ewmh import Ewmh
@@ -169,7 +169,10 @@ class Tilenol(object):
         for w in self.xcore.raw.QueryTree(window=self.root_window)['children']:
             if w == self.root_window or w in self.dispatcher.all_windows:
                 continue
-            attr = self.xcore.raw.GetWindowAttributes(window=w)
+            try:
+                attr = self.xcore.raw.GetWindowAttributes(window=w)
+            except XError:  # TODO(pc) check for error code
+                continue
             if attr['class'] == self.xcore.WindowClass.InputOnly:
                 continue
             geom = self.xcore.raw.GetGeometry(drawable=w)
