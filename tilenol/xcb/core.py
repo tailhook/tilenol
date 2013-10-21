@@ -205,7 +205,7 @@ class Core(object):
         if result['format'] == 0:
             return typ, None
         elif typ in (self.atom.STRING, self.atom.UTF8_STRING):
-            return typ, result['value'].decode('utf-8')
+            return typ, result['value'].decode('utf-8', 'replace')
         return typ, struct.unpack('<{}{}'.format(
             len(result['value']) // fmtlen[result['format']],
             fmtchar[result['format']]),
