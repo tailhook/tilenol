@@ -316,7 +316,8 @@ class Subprotocol(object):
             elif field.tag == 'doc':
                 pass  # docs are simply skipped
             else:
-                raise NotImplementedError(field)
+                #raise NotImplementedError(field)
+                pass
         return items
 
     def _parse_struct(self, el):
