@@ -218,12 +218,21 @@ class Proto(object):
         self.subprotos = {}
 
     def resolve_path(self):
-        try:
-            import sysconfig
-        except ImportError:  # python3.1 has no sysconfig
-            from distutils import sysconfig
-        path = sysconfig.get_config_var('datarootdir')
-        return os.path.join(path, 'xcb')
+        dirs = os.environ.get('XDG_DATA_DIRS')
+        if dirs:
+            dirs = filter(bool, dirs.split(':'))
+        else:
+            try:
+                import sysconfig
+            except ImportError:  # python3.1 has no sysconfig
+                from distutils import sysconfig
+            dirs = ['/usr/local/share', '/usr/share']
+            dirs.insert(0, sysconfig.get_config_var('datarootdir'))
+        for dir in dirs:
+            path = os.path.join(dir, 'xcb')
+            if os.path.isdir(path):
+                return path
+        raise RuntimeError("XCB proto files not found")
 
     def load_xml(self, name):
         with open(os.path.join(self.path, name + '.xml'), 'rb') as f:
