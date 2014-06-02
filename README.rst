@@ -41,6 +41,7 @@ Dependencies
 * xcb-proto (package containing `/usr/share/xcb/*.xml`)
 * zorro (http://github.com/tailhook/zorro)
 * pycairo from git (git://git.cairographics.org/git/pycairo)
+* python-yaml
 
 .. note::
 
