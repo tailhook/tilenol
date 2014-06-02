@@ -1,3 +1,4 @@
+import os
 import re
 
 keysym_re = re.compile(r"^#define\s+(XF86)?XK_(\w+)\s+(\S+)")
@@ -23,6 +24,7 @@ class Keysyms(object):
                 self.code_to_name[code] = name
 
     def load_default(self):
-        self.add_from_file('/usr/include/X11/keysymdef.h')
-        self.add_from_file('/usr/include/X11/XF86keysym.h')
+        xproto_dir = os.environ.get("XPROTO_DIR", "/usr/include/X11")
+        self.add_from_file(xproto_dir + '/keysymdef.h')
+        self.add_from_file(xproto_dir + '/XF86keysym.h')
 
