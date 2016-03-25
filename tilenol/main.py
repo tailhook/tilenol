@@ -37,8 +37,18 @@ def child_handler(sig, frame):
         except OSError:
             break
 
-def quit_handler(sig, frame):
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+def inplace_restart():
+    # don't trust sys.argv, doesn't work for nixos because of double-wrapping
+    with open('/proc/self/cmdline', 'rb') as f:
+        args = f.read().split(b'\0')
+        # last arg is empty
+        args.pop()
+        os.execv(args[0], args)
+
+
+def quit_handler(_sig, _frame):
+    inplace_restart()
 
 @has_dependencies
 class Tilenol(object):
@@ -217,4 +227,4 @@ class Tilenol(object):
                 log.exception("Error handling event %r", i)
 
     def cmd_restart(self):
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+        inplace_restart()
