@@ -104,9 +104,14 @@ class Window(BaseWindow):
     def __init__(self, wid):
         super().__init__(wid)
         self.frame = None
+
+        # Parameters that client(application) requested
         self.want = State()
+        # Parameters that tilenol requested from X server
         self.done = State()
+        # Parameters that received from X server
         self.real = State()
+
         self.props = {}
         self.lprops = LayoutProperties(self)
         self.property_changed = Event('window.property_changed')
