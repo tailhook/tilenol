@@ -81,6 +81,8 @@ class EventDispatcher(object):
             if not hasattr(win, 'group'):
                 self.classifier.apply(win)
                 self.groupman.add_window(win)
+            elif win.group.visible:
+                win.show()
 
     def handle_EnterNotifyEvent(self, ev):
         if self.mouse.drag:
