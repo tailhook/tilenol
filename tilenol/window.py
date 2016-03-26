@@ -104,6 +104,7 @@ class Window(BaseWindow):
     def __init__(self, wid):
         super().__init__(wid)
         self.frame = None
+        self.parent_obj = None
 
         # Parameters that client(application) requested
         self.want = State()
@@ -205,6 +206,9 @@ class Window(BaseWindow):
         return self.parent == self.xcore.root_window
 
     def reparent_to(self, window):
+        if self.parent_obj == window:
+            return
+        self.parent_obj = window
         self.xcore.raw.ChangeSaveSet(window=self,
                                      mode=self.xcore.SetMode.Insert)
         self.xcore.raw.ReparentWindow(
@@ -216,6 +220,9 @@ class Window(BaseWindow):
         self.reparent_to(self.frame)
 
     def reparent_root(self):
+        if self.parent_obj is None:
+            return
+        self.parent_obj = None
         self.xcore.raw.ReparentWindow(
             window=self,
             parent=self.xcore.root_window,
