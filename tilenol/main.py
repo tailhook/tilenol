@@ -39,12 +39,17 @@ def child_handler(sig, frame):
 
 
 def inplace_restart():
-    # don't trust sys.argv, doesn't work for nixos because of double-wrapping
-    with open('/proc/self/cmdline', 'rb') as f:
-        args = f.read().split(b'\0')
-        # last arg is empty
-        args.pop()
-        os.execv(args[0], args)
+    if 'TILENOL_CMDLINE' in os.environ:
+        import shlex
+        args = shlex.split(os.environ['TILENOL_CMDLINE'])
+        os.execvp(args[0], args)
+    else:
+        # don't trust sys.argv, doesn't work for nixos because of double-wrapping
+        with open('/proc/self/cmdline', 'rb') as f:
+            args = f.read().split(b'\0')
+            # last arg is empty
+            args.pop()
+            os.execv(args[0], args)
 
 
 def quit_handler(_sig, _frame):
