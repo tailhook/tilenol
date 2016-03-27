@@ -1,0 +1,29 @@
+containers:
+  xvfb:
+    auto-clean: true
+    setup:
+    - !Ubuntu trusty
+    - !UbuntuUniverse
+    - !Install [xinit, xvfb, libcairo2, xcb-proto]
+    - !BuildDeps [libcairo2-dev, git, ca-certificates]
+    - !PipConfig { dependencies: true }
+    - !Py3Install
+      - greenlet
+      - zorro
+      - git+git://git.cairographics.org/git/pycairo
+    - !Sh "ln -s \
+      /usr/local/lib/python3.4/dist-packages/cairo/_cairo.cpython-34m.so \
+      /usr/lib/python3/dist-packages/cairo"
+    volumes:
+      /tmp: !Tmpfs
+        size: 100Mi
+        mode: 0o1777
+        subdirs:
+          .X11-unix:
+      /tmp/.X11-unix: !BindRW /volumes/X11
+
+commands:
+  test: !Command
+    container: xvfb
+    environ: { HOME: /tmp }
+    run: [./runtests]
