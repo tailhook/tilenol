@@ -313,6 +313,10 @@ class Window(BaseWindow):
             while lst:
                 w = lst.pop(0)
                 h = lst.pop(0)
+                if len(lst) < w*h:
+                    log.warning("Invalid icon %dx%d but but got %d pixels",
+                                w, h, len(lst))
+                    break
                 idata = [cvt(px) for px in lst[:w*h]]
                 del lst[:w*h]
                 icons.append((w, h, idata))

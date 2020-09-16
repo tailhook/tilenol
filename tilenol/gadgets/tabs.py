@@ -158,7 +158,7 @@ class LeftBar(object):
         ctx.close_path()
         ctx.fill()
         # Icon
-        if hasattr(win.win, 'icons'):
+        if getattr(win.win, 'icons', None):
             win.win.draw_icon(ctx,
                 theme.margin.left + theme.padding.left,
                 y + (th + theme.padding.top + theme.padding.bottom
